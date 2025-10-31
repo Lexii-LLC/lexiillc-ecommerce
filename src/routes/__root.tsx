@@ -23,26 +23,92 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Lexii LLC - Buy | Sell | Trade',
-      },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-    ],
-  }),
+  head: () => {
+    const logoUrl = 'https://portal.lexiillc.com/assets/logo-dbf3009d.jpg';
+    const siteTitle = 'Lexii LLC - Shoes at Vintage Faire Mall, Modesto';
+    const siteDescription = 'Shop shoes online and pick up in-store at Lexii LLC in Vintage Faire Mall, Modesto. Get early access to our online store.';
+    
+    return {
+      meta: [
+        {
+          charSet: 'utf-8',
+        },
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1',
+        },
+        {
+          title: siteTitle,
+        },
+        {
+          name: 'description',
+          content: siteDescription,
+        },
+        // Open Graph / Facebook
+        {
+          property: 'og:type',
+          content: 'website',
+        },
+        {
+          property: 'og:title',
+          content: siteTitle,
+        },
+        {
+          property: 'og:description',
+          content: siteDescription,
+        },
+        {
+          property: 'og:image',
+          content: logoUrl,
+        },
+        {
+          property: 'og:url',
+          content: 'https://lexiillc.com',
+        },
+        {
+          property: 'og:site_name',
+          content: 'Lexii LLC',
+        },
+        // Twitter
+        {
+          name: 'twitter:card',
+          content: 'summary_large_image',
+        },
+        {
+          name: 'twitter:title',
+          content: siteTitle,
+        },
+        {
+          name: 'twitter:description',
+          content: siteDescription,
+        },
+        {
+          name: 'twitter:image',
+          content: logoUrl,
+        },
+        // Additional SEO
+        {
+          name: 'theme-color',
+          content: '#000000',
+        },
+      ],
+      links: [
+        {
+          rel: 'stylesheet',
+          href: appCss,
+        },
+        {
+          rel: 'icon',
+          href: logoUrl,
+          type: 'image/jpeg',
+        },
+        {
+          rel: 'apple-touch-icon',
+          href: logoUrl,
+        },
+      ],
+    };
+  },
 
   shellComponent: RootDocument,
 })
