@@ -123,19 +123,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <ClerkProvider>
           <Header />
           {children}
-          <TanStackDevtools
-            config={{
-              position: 'bottom-right',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-              TanStackQueryDevtools,
-              StoreDevtools,
-            ]}
-          />
+          {!import.meta.env.PROD && (
+            <TanStackDevtools
+              config={{
+                position: 'bottom-right',
+              }}
+              plugins={[
+                {
+                  name: 'Tanstack Router',
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+                TanStackQueryDevtools,
+                StoreDevtools,
+              ]}
+            />
+          )}
         </ClerkProvider>
         <Scripts />
       </body>
