@@ -121,6 +121,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ClerkProvider>
+          {/* View Mode Banner */}
+          <div className="bg-yellow-500 text-black text-center py-3 px-4 border-b-2 border-yellow-600">
+            <p className="text-sm md:text-base font-bold uppercase tracking-wide">
+              ⚠️ View Mode: Products are for viewing only. Online purchases are not available yet.
+            </p>
+          </div>
           <Header />
           {children}
           {!import.meta.env.PROD && (

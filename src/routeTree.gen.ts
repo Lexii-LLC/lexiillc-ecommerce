@@ -9,10 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShopIdRouteImport } from './routes/shop.$id'
+import { Route as ShopBrandRouteImport } from './routes/shop.$brand'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
+import { Route as ApiInventoryRouteImport } from './routes/api.inventory'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -24,10 +28,25 @@ import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ShopIdRoute = ShopIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ShopRoute,
+} as any)
+const ShopBrandRoute = ShopBrandRouteImport.update({
+  id: '/$brand',
+  path: '/$brand',
+  getParentRoute: () => ShopRoute,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
@@ -42,6 +61,11 @@ const DemoStoreRoute = DemoStoreRouteImport.update({
 const DemoClerkRoute = DemoClerkRouteImport.update({
   id: '/demo/clerk',
   path: '/demo/clerk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInventoryRoute = ApiInventoryRouteImport.update({
+  id: '/api/inventory',
+  path: '/api/inventory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
@@ -97,9 +121,13 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/shop': typeof ShopRouteWithChildren
+  '/api/inventory': typeof ApiInventoryRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/shop/$brand': typeof ShopBrandRoute
+  '/shop/$id': typeof ShopIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -113,9 +141,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/shop': typeof ShopRouteWithChildren
+  '/api/inventory': typeof ApiInventoryRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/shop/$brand': typeof ShopBrandRoute
+  '/shop/$id': typeof ShopIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -130,9 +162,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/shop': typeof ShopRouteWithChildren
+  '/api/inventory': typeof ApiInventoryRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/shop/$brand': typeof ShopBrandRoute
+  '/shop/$id': typeof ShopIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -148,9 +184,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/shop'
+    | '/api/inventory'
     | '/demo/clerk'
     | '/demo/store'
     | '/demo/tanstack-query'
+    | '/shop/$brand'
+    | '/shop/$id'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
@@ -164,9 +204,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/shop'
+    | '/api/inventory'
     | '/demo/clerk'
     | '/demo/store'
     | '/demo/tanstack-query'
+    | '/shop/$brand'
+    | '/shop/$id'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
@@ -180,9 +224,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/shop'
+    | '/api/inventory'
     | '/demo/clerk'
     | '/demo/store'
     | '/demo/tanstack-query'
+    | '/shop/$brand'
+    | '/shop/$id'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
@@ -197,6 +245,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ShopRoute: typeof ShopRouteWithChildren
+  ApiInventoryRoute: typeof ApiInventoryRoute
   DemoClerkRoute: typeof DemoClerkRoute
   DemoStoreRoute: typeof DemoStoreRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -214,12 +264,33 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/shop/$id': {
+      id: '/shop/$id'
+      path: '/$id'
+      fullPath: '/shop/$id'
+      preLoaderRoute: typeof ShopIdRouteImport
+      parentRoute: typeof ShopRoute
+    }
+    '/shop/$brand': {
+      id: '/shop/$brand'
+      path: '/$brand'
+      fullPath: '/shop/$brand'
+      preLoaderRoute: typeof ShopBrandRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
@@ -240,6 +311,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/clerk'
       fullPath: '/demo/clerk'
       preLoaderRoute: typeof DemoClerkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/inventory': {
+      id: '/api/inventory'
+      path: '/api/inventory'
+      fullPath: '/api/inventory'
+      preLoaderRoute: typeof ApiInventoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/start/server-funcs': {
@@ -315,8 +393,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ShopRouteChildren {
+  ShopBrandRoute: typeof ShopBrandRoute
+  ShopIdRoute: typeof ShopIdRoute
+}
+
+const ShopRouteChildren: ShopRouteChildren = {
+  ShopBrandRoute: ShopBrandRoute,
+  ShopIdRoute: ShopIdRoute,
+}
+
+const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ShopRoute: ShopRouteWithChildren,
+  ApiInventoryRoute: ApiInventoryRoute,
   DemoClerkRoute: DemoClerkRoute,
   DemoStoreRoute: DemoStoreRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
