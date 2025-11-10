@@ -17,8 +17,8 @@ const config = defineConfig({
     netlify(),
   ],
   ssr: {
-    // Don't externalize sneaks-api - bundle it instead
-    noExternal: ['sneaks-api'],
+    // Don't externalize sneaks-api and its dependencies - bundle them instead
+    noExternal: ['sneaks-api', 'express'],
   },
   build: {
     ssr: true,

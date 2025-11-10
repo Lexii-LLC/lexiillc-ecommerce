@@ -7,5 +7,5 @@
   SECRETS_SCAN_OMIT_KEYS = "CLOVER_API_BASE_URL"
 
 [functions]
-  # Include sneaks-api package for serverless functions
-  included_files = ["node_modules/sneaks-api/**"]
+  # Include sneaks-api and express packages for serverless functions
+  included_files = ["node_modules/sneaks-api/**", "node_modules/express/**"]
