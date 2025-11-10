@@ -32,7 +32,7 @@ export async function searchSneaksAPIServer(
   // For now, return empty results so the app functions without images
   // Products will still display but without images until a proper API is integrated
   
-  console.log(`Sneaks API: Image search disabled for "${query}" - returning empty results`)
+  // Silently return empty results - no logging to avoid log spam
   return { products: [], cached: false }
 }
 
