@@ -49,7 +49,66 @@ async function verifyCloverConnection(
 }
 
 /**
- * Internal function to fetch Clover inventory (can be called server-side)
+ * Internal function to fetch a single page of Clover inventory
+ */
+async function fetchCloverInventoryPage(
+  url: string,
+  token: string
+): Promise<{ items: CloverItem[]; nextUrl: string | null }> {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    let errorMessage = `Clover API error: ${response.status} ${response.statusText}`
+    
+    if (response.status === 401) {
+      errorMessage += '\n\n401 Unauthorized - Possible causes:'
+      errorMessage += '\n- Invalid or expired API token'
+      errorMessage += '\n- Incorrect merchant ID'
+      errorMessage += '\n- Token lacks required permissions'
+      errorMessage += '\n- Using sandbox token in production (or vice versa)'
+      errorMessage += '\n\nPlease verify:'
+      errorMessage += '\n1. Your API token is valid and not expired'
+      errorMessage += '\n2. Your merchant ID is correct'
+      errorMessage += '\n3. Token has "inventory" or "items" read permissions'
+      errorMessage += '\n4. You\'re using the correct environment (sandbox vs production)'
+    }
+    
+    if (errorText) {
+      errorMessage += `\n\nAPI Response: ${errorText}`
+    }
+    
+    throw new Error(errorMessage)
+  }
+
+  const data = await response.json()
+
+  // Clover API returns items in a 'elements' array with pagination info
+  let items: CloverItem[] = []
+  let nextUrl: string | null = null
+
+  if (data.elements && Array.isArray(data.elements)) {
+    items = data.elements as CloverItem[]
+    // Check for next page URL in the response
+    if (data.href && typeof data.href === 'string') {
+      nextUrl = data.href
+    }
+  } else if (Array.isArray(data)) {
+    // Fallback: if it's already an array
+    items = data as CloverItem[]
+  }
+
+  return { items, nextUrl }
+}
+
+/**
+ * Internal function to fetch Clover inventory with pagination support
  */
 async function fetchCloverInventoryInternal(): Promise<CloverItem[]> {
   const CLOVER_API_BASE_URL = getEnv('CLOVER_API_BASE_URL') || 'https://api.clover.com'
@@ -82,55 +141,41 @@ async function fetchCloverInventoryInternal(): Promise<CloverItem[]> {
     )
   }
 
-  const url = `${CLOVER_API_BASE_URL}/v3/merchants/${CLOVER_MERCHANT_ID}/items`
+  // Start with the initial URL - Clover API typically supports limit parameter
+  // Using limit=1000 to get as many items as possible per page
+  const initialUrl = `${CLOVER_API_BASE_URL}/v3/merchants/${CLOVER_MERCHANT_ID}/items?limit=1000`
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${CLOVER_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    const allItems: CloverItem[] = []
+    let currentUrl: string | null = initialUrl
+    let pageCount = 0
+    const maxPages = 100 // Safety limit to prevent infinite loops
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      let errorMessage = `Clover API error: ${response.status} ${response.statusText}`
+    // Fetch all pages
+    while (currentUrl && pageCount < maxPages) {
+      const { items, nextUrl } = await fetchCloverInventoryPage(currentUrl, CLOVER_API_TOKEN)
+      allItems.push(...items)
       
-      if (response.status === 401) {
-        errorMessage += '\n\n401 Unauthorized - Possible causes:'
-        errorMessage += '\n- Invalid or expired API token'
-        errorMessage += '\n- Incorrect merchant ID'
-        errorMessage += '\n- Token lacks required permissions'
-        errorMessage += '\n- Using sandbox token in production (or vice versa)'
-        errorMessage += '\n\nPlease verify:'
-        errorMessage += '\n1. Your API token is valid and not expired'
-        errorMessage += '\n2. Your merchant ID is correct'
-        errorMessage += '\n3. Token has "inventory" or "items" read permissions'
-        errorMessage += '\n4. You\'re using the correct environment (sandbox vs production)'
+      // If we got fewer items than the limit, we're on the last page
+      if (items.length < 1000) {
+        break
       }
-      
-      if (errorText) {
-        errorMessage += `\n\nAPI Response: ${errorText}`
+
+      currentUrl = nextUrl
+      pageCount++
+
+      // Small delay between pages to avoid rate limiting
+      if (currentUrl && pageCount < maxPages) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
       }
-      
-      throw new Error(errorMessage)
     }
 
-    const data = await response.json()
-
-    // Clover API returns items in a 'elements' array
-    if (data.elements && Array.isArray(data.elements)) {
-      return data.elements as CloverItem[]
+    if (pageCount >= maxPages) {
+      console.warn(`Reached maximum page limit (${maxPages}). Some items may be missing.`)
     }
 
-    // Fallback: if it's already an array
-    if (Array.isArray(data)) {
-      return data as CloverItem[]
-    }
-
-    // If no items found, return empty array
-    return []
+    console.log(`Fetched ${allItems.length} items from Clover API across ${pageCount + 1} page(s)`)
+    return allItems
   } catch (error) {
     console.error('Error fetching Clover inventory:', error)
     throw error
