@@ -1,22 +1,23 @@
-import { createFileRoute, Link, useParams } from '@tanstack/react-router'
+import { createFileRoute, Link, useParams, redirect } from '@tanstack/react-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import React, { useState, useMemo, useEffect } from 'react'
 import type { EnrichedInventoryItem } from '../types/inventory'
 import { ShoppingBag, Loader2, AlertCircle, Search, Filter, X, ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/shop/$brand')({
-  beforeLoad: ({ params, location }) => {
+  beforeLoad: ({ params }) => {
     const brand = decodeURIComponent(params.brand)
     // Check if it's a product ID (12+ chars, all uppercase/numbers)
     const isLikelyProductId = brand.length >= 12 && /^[A-Z0-9]+$/.test(brand)
     
     if (isLikelyProductId) {
-      console.log('[BrandPage] beforeLoad: Detected product ID, checking if already on product route')
-      // Check if we're already trying to load as a product (prevent infinite loop)
-      // The product route should handle it, so we'll let it through
-      // But we need to make sure the product route takes precedence
-      // For now, just don't redirect here - let the product route handle it
-      // Instead, we'll check in the component and redirect there if needed
+      console.log('[BrandPage] beforeLoad: Redirecting product ID to product route')
+      // Redirect to the product route using TanStack Router's redirect
+      throw redirect({
+        to: '/shop/$id',
+        params: { id: params.brand },
+        replace: true,
+      })
     }
   },
   component: BrandShopPage,
