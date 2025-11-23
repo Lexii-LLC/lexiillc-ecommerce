@@ -10,12 +10,13 @@ import { Home, ShoppingBag, ChevronDown } from 'lucide-react';
 export default function Header() {
   const [isShopHovered, setIsShopHovered] = useState(false);
 
-  const { data: inventory } = useQuery<EnrichedInventoryItem[]>({
-    queryKey: ['inventory'],
+  // Fetch metadata for brands list (lightweight)
+  const { data: metadata } = useQuery<{ brands: string[] }>({
+    queryKey: ['inventory-metadata'],
     queryFn: async () => {
-      const response = await fetch('/api/inventory')
+      const response = await fetch('/api/inventory?all=true')
       if (!response.ok) {
-        throw new Error('Failed to fetch inventory')
+        throw new Error('Failed to fetch inventory metadata')
       }
       return response.json()
     },
@@ -66,12 +67,9 @@ export default function Header() {
 
   // Get unique manufacturers (filtered to only valid brands)
   const manufacturers = useMemo(() => {
-    if (!inventory) return []
-    const normalizedBrands = inventory
-      .map((item) => {
-        if (!item.brand) return null
-        return normalizeBrand(item.brand)
-      })
+    if (!metadata?.brands) return []
+    const normalizedBrands = metadata.brands
+      .map((brand) => normalizeBrand(brand))
       .filter((brand): brand is string => {
         if (!brand) return false
         // Check if normalized brand matches any valid brand (case-insensitive)
@@ -90,7 +88,7 @@ export default function Header() {
       if (indexB !== -1) return 1
       return a.localeCompare(b)
     })
-  }, [inventory])
+  }, [metadata])
 
   return (
     <header className="py-4 px-4 md:px-16 flex items-center justify-between bg-black text-white shadow-lg relative z-50">
@@ -132,7 +130,7 @@ export default function Header() {
           </Link>
           
           {/* Dropdown Menu */}
-          {isShopHovered && manufacturers.length > 0 && (
+          {isShopHovered && manufacturers && manufacturers.length > 0 && (
             <div className="absolute top-full left-0 pt-2 w-48">
               <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-2xl overflow-hidden">
                 <div className="py-2">

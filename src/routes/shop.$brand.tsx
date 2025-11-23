@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import React, { useState, useMemo, useEffect } from 'react'
 import type { EnrichedInventoryItem } from '../types/inventory'
 import { ShoppingBag, Loader2, AlertCircle, Search, Filter, X, ArrowLeft } from 'lucide-react'
@@ -15,16 +15,49 @@ function BrandShopPage() {
   const brand = decodeURIComponent(brandParam)
   const navigate = Route.useNavigate()
 
-  const { data: inventory, isLoading, error } = useQuery<EnrichedInventoryItem[]>({
-    queryKey: ['inventory'],
-    queryFn: async () => {
-      const response = await fetch('/api/inventory')
+  // For brand page, we need all items to filter by brand
+  // Use infinite query to load all items
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery<{
+    items: EnrichedInventoryItem[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+    hasMore: boolean
+  }>({
+    queryKey: ['inventory-paginated'],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(`/api/inventory?page=${pageParam}&pageSize=100`)
       if (!response.ok) {
         throw new Error('Failed to fetch inventory')
       }
       return response.json()
     },
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.page + 1 : undefined
+    },
+    initialPageParam: 1,
   })
+
+  // Flatten all loaded pages into a single array
+  const inventory = useMemo(() => {
+    if (!data) return []
+    return data.pages.flatMap((page) => page.items)
+  }, [data])
+
+  // Load all items for brand filtering
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // Check if the brand param is actually a product ID (not a brand name)
   // Product IDs are typically long alphanumeric strings, while brand names are short words
