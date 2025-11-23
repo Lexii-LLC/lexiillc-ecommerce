@@ -23,13 +23,17 @@ function BrandShopPage() {
   // Immediate redirect if it's clearly a product ID
   useEffect(() => {
     if (isLikelyProductId) {
-      navigate({ to: '/shop/$id', params: { id: brandParam }, replace: true })
+      console.log('[BrandPage] Detected product ID, redirecting:', { brand, brandParam, isLikelyProductId })
+      navigate({ to: '/shop/$id', params: { id: brandParam }, replace: true }).catch((err) => {
+        console.error('[BrandPage] Redirect error:', err)
+      })
       return
     }
-  }, [isLikelyProductId, brandParam, navigate])
+  }, [isLikelyProductId, brandParam, navigate, brand])
 
   // If redirecting, show loading state
   if (isLikelyProductId) {
+    console.log('[BrandPage] Showing loading state for product ID redirect')
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
