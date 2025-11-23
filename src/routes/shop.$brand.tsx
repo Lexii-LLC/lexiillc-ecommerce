@@ -15,6 +15,31 @@ function BrandShopPage() {
   const brand = decodeURIComponent(brandParam)
   const navigate = Route.useNavigate()
 
+  // Early check: If it looks like a product ID, redirect immediately
+  // Product IDs are long alphanumeric strings (12+ chars, all uppercase/numbers)
+  // Brand names are short (typically 1-20 chars) and may contain spaces/hyphens
+  const isLikelyProductId = brand.length >= 12 && /^[A-Z0-9]+$/.test(brand)
+  
+  // Immediate redirect if it's clearly a product ID
+  useEffect(() => {
+    if (isLikelyProductId) {
+      navigate({ to: '/shop/$id', params: { id: brandParam }, replace: true })
+      return
+    }
+  }, [isLikelyProductId, brandParam, navigate])
+
+  // If redirecting, show loading state
+  if (isLikelyProductId) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-white" />
+          <p className="text-gray-400 text-lg">Loading product...</p>
+        </div>
+      </div>
+    )
+  }
+
   // For brand page, we need all items to filter by brand
   // Use infinite query to load all items
   const {
@@ -59,14 +84,6 @@ function BrandShopPage() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  // Check if the brand param is actually a product ID (not a brand name)
-  // Product IDs are typically long alphanumeric strings, while brand names are short words
-  const isLikelyProductId = useMemo(() => {
-    // If it's a long alphanumeric string (like Clover IDs), it's probably a product ID
-    // Brand names are typically short (1-20 chars) and contain spaces/hyphens
-    return brand.length > 15 && /^[A-Z0-9]+$/.test(brand)
-  }, [brand])
-
   // Get all valid brand names from inventory
   const validBrands = useMemo(() => {
     if (!inventory) return new Set<string>()
@@ -79,21 +96,21 @@ function BrandShopPage() {
     return brands
   }, [inventory])
 
-  // If it looks like a product ID or isn't a valid brand, redirect to product page
+  // Secondary check: If it's not a valid brand but might be a product ID, redirect
   useEffect(() => {
-    if (inventory && !isLoading && !error) {
+    if (inventory && !isLoading && !error && inventory.length > 0) {
       const normalizedBrand = brand.toLowerCase()
       const isValidBrand = validBrands.has(normalizedBrand)
       
       // Check if it's a product ID by looking it up in inventory
       const isProductId = inventory.some((item) => item.id === brand || item.id === brandParam)
       
-      if ((isLikelyProductId || isProductId) && !isValidBrand) {
-        // This is likely a product ID, redirect to product detail page
+      if (isProductId && !isValidBrand) {
+        // This is a product ID, redirect to product detail page
         navigate({ to: '/shop/$id', params: { id: brandParam }, replace: true })
       }
     }
-  }, [inventory, brand, brandParam, isLikelyProductId, validBrands, isLoading, error, navigate])
+  }, [inventory, brand, brandParam, validBrands, isLoading, error, navigate])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSize, setSelectedSize] = useState<string>('')
