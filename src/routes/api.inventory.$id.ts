@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { getEnrichedInventory } from '../../lib/inventory-service'
-import { getCachedInventory, setCachedInventory } from '../../lib/inventory-cache'
+import { getEnrichedInventory } from '../lib/inventory-service'
+import { getCachedInventory, setCachedInventory } from '../lib/inventory-cache'
 
 export const Route = createFileRoute('/api/inventory/$id')({
   server: {
