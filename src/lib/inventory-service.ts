@@ -1,48 +1,83 @@
 import { fetchCloverInventoryServer } from './clover-api'
 import { searchSneaksAPIServer, findBestMatch } from './sneaks-api'
 import { parseShoeName } from './shoe-parser'
+import { getCachedRawInventory, setCachedRawInventory, getCachedEnrichment, setCachedEnrichment } from './inventory-cache'
 import type { EnrichedInventoryItem } from '../types/inventory'
+import type { CloverItem } from '../types/inventory'
+
+/**
+ * Get raw Clover inventory (fast, no enrichment)
+ */
+export async function getRawInventory(): Promise<CloverItem[]> {
+  // Check cache first
+  const cached = getCachedRawInventory()
+  if (cached) {
+    return cached
+  }
+
+  // Fetch from Clover
+  const cloverItems = await fetchCloverInventoryServer()
+
+  // Filter out items with $0 price or no price
+  const validItems = cloverItems.filter((item) => {
+    return item.price !== undefined && item.price !== null && item.price > 0
+  })
+
+  // Cache raw items
+  setCachedRawInventory(validItems)
+
+  return validItems
+}
+
+/**
+ * Enrich a batch of items (for pagination)
+ */
+export async function enrichItemsBatch(items: CloverItem[]): Promise<EnrichedInventoryItem[]> {
+  const batchSize = 10
+  const enrichedItems: EnrichedInventoryItem[] = []
+  
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize)
+    const batchPromises = batch.map(async (item) => {
+      // Check if already enriched and cached
+      const cached = getCachedEnrichment(item.id)
+      if (cached) {
+        return cached
+      }
+
+      try {
+        const enriched = await enrichInventoryItem(item)
+        // Cache the enriched item
+        setCachedEnrichment(item.id, enriched)
+        return enriched
+      } catch (error) {
+        // Gracefully handle any errors - return item without enrichment
+        const fallback = createFallbackItem(item)
+        setCachedEnrichment(item.id, fallback)
+        return fallback
+      }
+    })
+
+    const batchResults = await Promise.all(batchPromises)
+    enrichedItems.push(...batchResults)
+
+    // Small delay between batches to avoid overwhelming the API
+    if (i + batchSize < items.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
+  return enrichedItems
+}
 
 /**
  * Main service that orchestrates Clover fetch, parsing, and Sneaks API lookup
+ * NOTE: This enriches ALL items - use getRawInventory + enrichItemsBatch for pagination
  */
 export async function getEnrichedInventory(): Promise<EnrichedInventoryItem[]> {
   try {
-    // Fetch inventory from Clover
-    const cloverItems = await fetchCloverInventoryServer()
-
-    // Filter out items with $0 price or no price
-    const validItems = cloverItems.filter((item) => {
-      // Exclude items with price of 0, undefined, or null
-      return item.price !== undefined && item.price !== null && item.price > 0
-    })
-
-    // Process items in batches to enrich with images (with graceful error handling)
-    const enrichedItems: EnrichedInventoryItem[] = []
-    const batchSize = 10
-    
-    for (let i = 0; i < validItems.length; i += batchSize) {
-      const batch = validItems.slice(i, i + batchSize)
-      const batchPromises = batch.map(async (item) => {
-        try {
-          return await enrichInventoryItem(item)
-        } catch (error) {
-          // Gracefully handle any errors - return item without enrichment
-          // Errors are already logged in the enrichInventoryItem function
-          return createFallbackItem(item)
-        }
-      })
-
-      const batchResults = await Promise.all(batchPromises)
-      enrichedItems.push(...batchResults)
-
-      // Small delay between batches to avoid overwhelming the API
-      if (i + batchSize < validItems.length) {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-      }
-    }
-
-    return enrichedItems
+    const rawItems = await getRawInventory()
+    return await enrichItemsBatch(rawItems)
   } catch (error) {
     console.error('Error getting enriched inventory:', error)
     throw error

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { getEnrichedInventory } from '../lib/inventory-service'
-import { getCachedInventory, setCachedInventory } from '../lib/inventory-cache'
+import { getRawInventory, enrichItemsBatch } from '../lib/inventory-service'
+import { getCachedEnrichment } from '../lib/inventory-cache'
 
 export const Route = createFileRoute('/api/inventory/$id')({
   server: {
@@ -13,20 +13,25 @@ export const Route = createFileRoute('/api/inventory/$id')({
           // Decode the ID in case it's URL-encoded
           const decodedId = decodeURIComponent(id)
 
-          // Check if cache exists and is still valid
-          let inventory = getCachedInventory()
-          if (!inventory) {
-            // Fetch fresh data
-            inventory = await getEnrichedInventory()
+          // Check if this specific item is already enriched and cached
+          let product = getCachedEnrichment(decodedId) || getCachedEnrichment(id)
+          
+          if (!product) {
+            // Get raw inventory and find the item
+            const rawItems = await getRawInventory()
+            const rawItem = rawItems.find((item) => item.id === decodedId || item.id === id)
             
-            // Update cache
-            setCachedInventory(inventory)
-          }
+            if (!rawItem) {
+              return json(
+                { error: 'Product not found', id: decodedId },
+                { status: 404 }
+              )
+            }
 
-          // Find the product by ID (try both encoded and decoded versions)
-          const product = inventory.find(
-            (item) => item.id === decodedId || item.id === id
-          )
+            // Enrich just this one item
+            const enriched = await enrichItemsBatch([rawItem])
+            product = enriched[0]
+          }
 
           if (!product) {
             return json(
