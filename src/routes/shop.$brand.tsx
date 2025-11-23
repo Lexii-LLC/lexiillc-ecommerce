@@ -5,20 +5,17 @@ import type { EnrichedInventoryItem } from '../types/inventory'
 import { ShoppingBag, Loader2, AlertCircle, Search, Filter, X, ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/shop/$brand')({
-  beforeLoad: ({ params, location }) => {
+  beforeLoad: ({ params }) => {
     const brand = decodeURIComponent(params.brand)
     // Check if it's a product ID (12+ chars, all uppercase/numbers)
     const isLikelyProductId = brand.length >= 12 && /^[A-Z0-9]+$/.test(brand)
     
     if (isLikelyProductId) {
       console.log('[BrandPage] beforeLoad: Redirecting product ID to product page:', brand)
-      // Redirect to product page
-      throw new Response(null, {
-        status: 307,
-        headers: {
-          Location: `/shop/${encodeURIComponent(params.brand)}`,
-        },
-      })
+      // Direct redirect using window.location for immediate navigation
+      if (typeof window !== 'undefined') {
+        window.location.href = `/shop/${encodeURIComponent(params.brand)}`
+      }
     }
   },
   component: BrandShopPage,
