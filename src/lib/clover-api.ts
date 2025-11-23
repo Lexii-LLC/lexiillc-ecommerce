@@ -65,7 +65,7 @@ async function fetchCloverInventoryPage(
   token: string,
   retryCount = 0,
   maxRetries = 3
-): Promise<{ items: CloverItem[]; nextUrl: string | null }> {
+): Promise<CloverItem[]> {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -154,22 +154,17 @@ async function fetchCloverInventoryPage(
     throw new Error(`Invalid JSON response from Clover API: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
   }
 
-  // Clover API returns items in a 'elements' array with pagination info
+  // Clover API returns items in a 'elements' array
   let items: CloverItem[] = []
-  let nextUrl: string | null = null
 
   if (data.elements && Array.isArray(data.elements)) {
     items = data.elements as CloverItem[]
-    // Check for next page URL in the response
-    if (data.href && typeof data.href === 'string') {
-      nextUrl = data.href
-    }
   } else if (Array.isArray(data)) {
     // Fallback: if it's already an array
     items = data as CloverItem[]
   }
 
-  return { items, nextUrl }
+  return items
 }
 
 /**
@@ -206,49 +201,51 @@ async function fetchCloverInventoryInternal(): Promise<CloverItem[]> {
     )
   }
 
-  // Start with the initial URL - Clover API typically supports limit parameter
-  // Using limit=1000 to get as many items as possible per page
-  // If that fails, we'll try without the limit parameter
-  let initialUrl = `${CLOVER_API_BASE_URL}/v3/merchants/${CLOVER_MERCHANT_ID}/items?limit=1000`
+  // Clover API uses offset/limit pagination (max 1000 items per request)
+  // We'll fetch in batches of 1000 using offset parameter
+  const limit = 1000
+  const baseUrl = `${CLOVER_API_BASE_URL}/v3/merchants/${CLOVER_MERCHANT_ID}/items`
 
   try {
     const allItems: CloverItem[] = []
-    let currentUrl: string | null = initialUrl
+    let offset = 0
     let pageCount = 0
-    const maxPages = 100 // Safety limit to prevent infinite loops
-    let useLimit = true
+    const maxPages = 10 // Safety limit (10 * 1000 = 10,000 items max)
 
-    // Fetch all pages
-    while (currentUrl && pageCount < maxPages) {
+    // Fetch all pages using offset pagination
+    while (pageCount < maxPages) {
+      const url = `${baseUrl}?limit=${limit}&offset=${offset}`
+      
       try {
-        const { items, nextUrl } = await fetchCloverInventoryPage(currentUrl, CLOVER_API_TOKEN)
+        const items = await fetchCloverInventoryPage(url, CLOVER_API_TOKEN)
         allItems.push(...items)
         
-        // If we got fewer items than the limit, we're on the last page
-        if (useLimit && items.length < 1000) {
+        // If we got fewer items than the limit, we've reached the end
+        if (items.length < limit) {
+          console.log(`Reached end of inventory at offset ${offset}`)
           break
         }
         
-        // If no next URL and we have items, we're done
-        if (!nextUrl) {
-          break
-        }
-
-        currentUrl = nextUrl
+        // If we got exactly the limit, there might be more items
+        offset += limit
         pageCount++
 
         // Delay between pages to avoid rate limiting
         // Using 500ms base delay with jitter to be more conservative
-        if (currentUrl && pageCount < maxPages) {
+        if (pageCount < maxPages) {
           await sleep(500)
         }
       } catch (pageError) {
-        // If first page fails with limit parameter, try without it
-        if (pageCount === 0 && useLimit && currentUrl.includes('limit=')) {
-          console.warn('Initial request with limit parameter failed, retrying without limit')
-          useLimit = false
-          currentUrl = `${CLOVER_API_BASE_URL}/v3/merchants/${CLOVER_MERCHANT_ID}/items`
-          continue
+        // If first page fails, try without limit/offset to see if API supports it differently
+        if (pageCount === 0) {
+          console.warn('Initial paginated request failed, trying without pagination parameters')
+          try {
+            const items = await fetchCloverInventoryPage(baseUrl, CLOVER_API_TOKEN)
+            console.log(`Fetched ${items.length} items without pagination`)
+            return items
+          } catch (fallbackError) {
+            throw pageError // Throw original error if fallback also fails
+          }
         }
         throw pageError
       }

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useMatchRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { useState, useMemo } from 'react'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { EnrichedInventoryItem } from '../types/inventory'
 import { ShoppingBag, Loader2, AlertCircle, Search, Filter, X } from 'lucide-react'
 
@@ -10,21 +10,68 @@ export const Route = createFileRoute('/shop')({
 
 type SortOption = 'price-low' | 'price-high' | 'name-asc' | 'name-desc' | 'newest'
 
+interface PaginatedResponse {
+  items: EnrichedInventoryItem[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  hasMore: boolean
+}
+
+interface MetadataResponse {
+  total: number
+  brands: string[]
+  sizes: string[]
+}
+
 function ProductsPage() {
   const matchRoute = useMatchRoute()
   const isProductDetailPage = matchRoute({ to: '/shop/$id' })
   const isBrandPage = matchRoute({ to: '/shop/$brand' })
 
-  const { data: inventory, isLoading, error } = useQuery<EnrichedInventoryItem[]>({
-    queryKey: ['inventory'],
+  const pageSize = 50
+
+  // Fetch metadata (brands, sizes) separately - lightweight
+  const { data: metadata } = useQuery<MetadataResponse>({
+    queryKey: ['inventory-metadata'],
     queryFn: async () => {
-      const response = await fetch('/api/inventory')
+      const response = await fetch('/api/inventory?all=true')
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory metadata')
+      }
+      return response.json()
+    },
+  })
+
+  // Fetch products with infinite scroll
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery<PaginatedResponse>({
+    queryKey: ['inventory-paginated'],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await fetch(`/api/inventory?page=${pageParam}&pageSize=${pageSize}`)
       if (!response.ok) {
         throw new Error('Failed to fetch inventory')
       }
       return response.json()
     },
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.page + 1 : undefined
+    },
+    initialPageParam: 1,
   })
+
+  // Flatten all loaded pages into a single array
+  const inventory = useMemo(() => {
+    if (!data) return []
+    return data.pages.flatMap((page) => page.items)
+  }, [data])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBrand, setSelectedBrand] = useState<string>('')
@@ -34,26 +81,30 @@ function ProductsPage() {
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Get unique brands and sizes for filters
+  // Use metadata for brands and sizes (more efficient than computing from loaded items)
   const brands = useMemo(() => {
-    if (!inventory) return []
-    const uniqueBrands = new Set(
-      inventory
-        .map((item) => item.brand)
-        .filter((brand): brand is string => Boolean(brand))
-    )
-    return Array.from(uniqueBrands).sort()
-  }, [inventory])
+    return metadata?.brands || []
+  }, [metadata])
 
   const sizes = useMemo(() => {
-    if (!inventory) return []
-    const uniqueSizes = new Set(
-      inventory
-        .map((item) => item.size)
-        .filter((size): size is string => Boolean(size))
-    )
-    return Array.from(uniqueSizes).sort()
-  }, [inventory])
+    return metadata?.sizes || []
+  }, [metadata])
+
+  // Infinite scroll: load more when user scrolls near bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000 &&
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        fetchNextPage()
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // Filter and sort items
   const filteredAndSortedItems = useMemo(() => {
@@ -325,11 +376,26 @@ function ProductsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredAndSortedItems.map((item) => (
-                <ProductCard key={item.id} item={item} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredAndSortedItems.map((item) => (
+                  <ProductCard key={item.id} item={item} />
+                ))}
+              </div>
+              {isFetchingNextPage && (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                  <p className="ml-4 text-gray-400">Loading more products...</p>
+                </div>
+              )}
+              {!hasNextPage && filteredAndSortedItems.length > 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">
+                    Showing all {filteredAndSortedItems.length} of {metadata?.total || 0} products
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
