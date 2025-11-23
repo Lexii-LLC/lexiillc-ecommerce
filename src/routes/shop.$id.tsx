@@ -10,12 +10,17 @@ export const Route = createFileRoute('/shop/$id')({
 function ProductDetailPage() {
   const { id } = Route.useParams()
   
-  const { data: inventory, isLoading, error } = useQuery<EnrichedInventoryItem[]>({
-    queryKey: ['inventory'],
+  const { data: product, isLoading, error } = useQuery<EnrichedInventoryItem>({
+    queryKey: ['product', id],
     queryFn: async () => {
-      const response = await fetch('/api/inventory')
+      // Encode the ID to handle special characters in URLs
+      const encodedId = encodeURIComponent(id)
+      const response = await fetch(`/api/inventory/${encodedId}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch inventory')
+        if (response.status === 404) {
+          throw new Error('Product not found')
+        }
+        throw new Error('Failed to fetch product')
       }
       return response.json()
     },
@@ -51,8 +56,6 @@ function ProductDetailPage() {
       </div>
     )
   }
-
-  const product = inventory?.find((item) => item.id === id)
 
   if (!product) {
     return (

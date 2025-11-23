@@ -1,18 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { getEnrichedInventory } from '../lib/inventory-service'
-import type { EnrichedInventoryItem } from '../types/inventory'
-
-// Cache configuration
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
-
-interface CacheEntry {
-  data: EnrichedInventoryItem[]
-  timestamp: number
-}
-
-// In-memory cache
-let cache: CacheEntry | null = null
+import { getCachedInventory, setCachedInventory } from '../lib/inventory-cache'
 
 export const Route = createFileRoute('/api/inventory')({
   server: {
@@ -20,19 +9,16 @@ export const Route = createFileRoute('/api/inventory')({
       GET: async () => {
         try {
           // Check if cache exists and is still valid
-          const now = Date.now()
-          if (cache && (now - cache.timestamp) < CACHE_DURATION) {
-            return json(cache.data)
+          const cached = getCachedInventory()
+          if (cached) {
+            return json(cached)
           }
 
           // Fetch fresh data
           const inventory = await getEnrichedInventory()
           
           // Update cache
-          cache = {
-            data: inventory,
-            timestamp: now,
-          }
+          setCachedInventory(inventory)
 
           return json(inventory)
         } catch (error) {
