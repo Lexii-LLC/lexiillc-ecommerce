@@ -16,9 +16,10 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\""
   },
   "dependencies": {
+    "@clerk/backend": "^2.23.2",
     "@clerk/clerk-react": "^5.49.0",
     "@netlify/vite-plugin-tanstack-start": "^1.1.8",
-    "@prisma/client": "^7.0.0",
+    "@supabase/supabase-js": "^2.84.0",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-devtools": "^0.7.0",
     "@tanstack/react-form": "^1.0.0",
@@ -33,7 +34,6 @@
     "@tanstack/store": "^0.7.0",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "^0.544.0",
-    "prisma": "^7.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.0.6",
