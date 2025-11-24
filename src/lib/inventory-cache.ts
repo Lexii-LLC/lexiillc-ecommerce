@@ -3,6 +3,7 @@ import type { CloverItem } from '../types/inventory'
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+const AI_IMPROVEMENT_CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days for AI improvements (cost-effective caching)
 
 interface CacheEntry {
   data: EnrichedInventoryItem[]
@@ -19,11 +20,18 @@ interface EnrichmentCacheEntry {
   timestamp: number
 }
 
+interface AIImprovementCacheEntry {
+  improvedName: string
+  timestamp: number
+}
+
 // Shared in-memory cache for inventory endpoints
 let enrichedCache: CacheEntry | null = null
 let rawCache: RawCacheEntry | null = null
 // Per-item enrichment cache (for lazy loading)
 const enrichmentCache = new Map<string, EnrichmentCacheEntry>()
+// AI improvements cache by normalized product name
+const aiImprovementCache = new Map<string, AIImprovementCacheEntry>()
 
 /**
  * Get cached raw Clover items if they're still valid
@@ -101,11 +109,13 @@ export function setCachedEnrichment(itemId: string, data: EnrichedInventoryItem)
 
 /**
  * Clear all caches (useful for testing or forced refresh)
+ * Also clears AI improvement caches
  */
 export function clearCache(): void {
   enrichedCache = null
   rawCache = null
   enrichmentCache.clear()
+  aiImprovementCache.clear()
 }
 
 /**
@@ -124,4 +134,53 @@ export function isRawCacheValid(): boolean {
   if (!rawCache) return false
   const now = Date.now()
   return (now - rawCache.timestamp) < CACHE_DURATION
+}
+
+/**
+ * Normalize a product name for caching purposes
+ */
+function normalizeProductName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s]/g, '')
+}
+
+/**
+ * Get cached AI improvement for a normalized product name
+ */
+export function getCachedHFImprovement(normalizedName: string): string | null {
+  const normalized = normalizeProductName(normalizedName)
+  const entry = aiImprovementCache.get(normalized)
+  if (!entry) return null
+  
+  const now = Date.now()
+  if ((now - entry.timestamp) < AI_IMPROVEMENT_CACHE_DURATION) {
+    return entry.improvedName
+  }
+  
+  aiImprovementCache.delete(normalized)
+  return null
+}
+
+/**
+ * Set cached AI improvement for a normalized product name
+ */
+export function setCachedHFImprovement(normalizedName: string, improvedName: string): void {
+  const normalized = normalizeProductName(normalizedName)
+  aiImprovementCache.set(normalized, {
+    improvedName,
+    timestamp: Date.now(),
+  })
+}
+
+/**
+ * Clear all caches including AI improvement caches
+ */
+export function clearAllCaches(): void {
+  enrichedCache = null
+  rawCache = null
+  enrichmentCache.clear()
+  aiImprovementCache.clear()
 }
