@@ -49,7 +49,8 @@ export interface EnrichedInventoryItem {
   originalName: string
   brand: string
   model: string
-  size?: string
+  size?: 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'
+  variant?: string // For non-apparel items (e.g., "Macaron", "Strawberry")
   price?: number
   stockCount?: number
   imageUrl?: string
