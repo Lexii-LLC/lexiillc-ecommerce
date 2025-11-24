@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { EnrichedInventoryItem } from '../types/inventory';
 
 import ClerkHeader from '../integrations/clerk/header-user.tsx';
+import CartIcon from './CartIcon';
 
 import { Home, ShoppingBag, ChevronDown } from 'lucide-react';
 
@@ -156,7 +157,8 @@ export default function Header() {
           )}
         </div>
       </div>
-      <div>
+      <div className="flex items-center gap-4">
+        <CartIcon />
         <ClerkHeader />
       </div>
     </header>
