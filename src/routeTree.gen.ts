@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIdRouteImport } from './routes/shop.$id'
 import { Route as ShopBrandRouteImport } from './routes/shop.$brand'
@@ -17,20 +18,30 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-qu
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
 import { Route as ApiInventoryRouteImport } from './routes/api.inventory'
+import { Route as ApiCartRouteImport } from './routes/api.cart'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
+import { Route as ApiInventoryIdRouteImport } from './routes/api.inventory.$id'
+import { Route as ApiCartCartIdRouteImport } from './routes/api.cart.$cartId'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
+import { Route as ApiCartCartIdItemsRouteImport } from './routes/api.cart.$cartId.items'
+import { Route as ApiCartCartIdItemsItemIdRouteImport } from './routes/api.cart.$cartId.items.$itemId'
 
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -68,6 +79,11 @@ const ApiInventoryRoute = ApiInventoryRouteImport.update({
   path: '/api/inventory',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCartRoute = ApiCartRouteImport.update({
+  id: '/api/cart',
+  path: '/api/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   id: '/demo/start/server-funcs',
   path: '/demo/start/server-funcs',
@@ -98,6 +114,16 @@ const DemoApiNamesRoute = DemoApiNamesRouteImport.update({
   path: '/demo/api/names',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInventoryIdRoute = ApiInventoryIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiInventoryRoute,
+} as any)
+const ApiCartCartIdRoute = ApiCartCartIdRouteImport.update({
+  id: '/$cartId',
+  path: '/$cartId',
+  getParentRoute: () => ApiCartRoute,
+} as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
@@ -118,135 +144,184 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
   path: '/demo/start/ssr/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCartCartIdItemsRoute = ApiCartCartIdItemsRouteImport.update({
+  id: '/items',
+  path: '/items',
+  getParentRoute: () => ApiCartCartIdRoute,
+} as any)
+const ApiCartCartIdItemsItemIdRoute =
+  ApiCartCartIdItemsItemIdRouteImport.update({
+    id: '/$itemId',
+    path: '/$itemId',
+    getParentRoute: () => ApiCartCartIdItemsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
   '/shop': typeof ShopRouteWithChildren
-  '/api/inventory': typeof ApiInventoryRoute
+  '/api/cart': typeof ApiCartRouteWithChildren
+  '/api/inventory': typeof ApiInventoryRouteWithChildren
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/shop/$brand': typeof ShopBrandRoute
   '/shop/$id': typeof ShopIdRoute
+  '/api/cart/$cartId': typeof ApiCartCartIdRouteWithChildren
+  '/api/inventory/$id': typeof ApiInventoryIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/cart/$cartId/items': typeof ApiCartCartIdItemsRouteWithChildren
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
+  '/api/cart/$cartId/items/$itemId': typeof ApiCartCartIdItemsItemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
   '/shop': typeof ShopRouteWithChildren
-  '/api/inventory': typeof ApiInventoryRoute
+  '/api/cart': typeof ApiCartRouteWithChildren
+  '/api/inventory': typeof ApiInventoryRouteWithChildren
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/shop/$brand': typeof ShopBrandRoute
   '/shop/$id': typeof ShopIdRoute
+  '/api/cart/$cartId': typeof ApiCartCartIdRouteWithChildren
+  '/api/inventory/$id': typeof ApiInventoryIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/cart/$cartId/items': typeof ApiCartCartIdItemsRouteWithChildren
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
   '/demo/start/ssr': typeof DemoStartSsrIndexRoute
+  '/api/cart/$cartId/items/$itemId': typeof ApiCartCartIdItemsItemIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
   '/shop': typeof ShopRouteWithChildren
-  '/api/inventory': typeof ApiInventoryRoute
+  '/api/cart': typeof ApiCartRouteWithChildren
+  '/api/inventory': typeof ApiInventoryRouteWithChildren
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/shop/$brand': typeof ShopBrandRoute
   '/shop/$id': typeof ShopIdRoute
+  '/api/cart/$cartId': typeof ApiCartCartIdRouteWithChildren
+  '/api/inventory/$id': typeof ApiInventoryIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/api/cart/$cartId/items': typeof ApiCartCartIdItemsRouteWithChildren
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
   '/demo/start/ssr/': typeof DemoStartSsrIndexRoute
+  '/api/cart/$cartId/items/$itemId': typeof ApiCartCartIdItemsItemIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/cart'
     | '/shop'
+    | '/api/cart'
     | '/api/inventory'
     | '/demo/clerk'
     | '/demo/store'
     | '/demo/tanstack-query'
     | '/shop/$brand'
     | '/shop/$id'
+    | '/api/cart/$cartId'
+    | '/api/inventory/$id'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/cart/$cartId/items'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
     | '/demo/start/ssr'
+    | '/api/cart/$cartId/items/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cart'
     | '/shop'
+    | '/api/cart'
     | '/api/inventory'
     | '/demo/clerk'
     | '/demo/store'
     | '/demo/tanstack-query'
     | '/shop/$brand'
     | '/shop/$id'
+    | '/api/cart/$cartId'
+    | '/api/inventory/$id'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/cart/$cartId/items'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
     | '/demo/start/ssr'
+    | '/api/cart/$cartId/items/$itemId'
   id:
     | '__root__'
     | '/'
+    | '/cart'
     | '/shop'
+    | '/api/cart'
     | '/api/inventory'
     | '/demo/clerk'
     | '/demo/store'
     | '/demo/tanstack-query'
     | '/shop/$brand'
     | '/shop/$id'
+    | '/api/cart/$cartId'
+    | '/api/inventory/$id'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/api/cart/$cartId/items'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
     | '/demo/start/ssr/'
+    | '/api/cart/$cartId/items/$itemId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CartRoute: typeof CartRoute
   ShopRoute: typeof ShopRouteWithChildren
-  ApiInventoryRoute: typeof ApiInventoryRoute
+  ApiCartRoute: typeof ApiCartRouteWithChildren
+  ApiInventoryRoute: typeof ApiInventoryRouteWithChildren
   DemoClerkRoute: typeof DemoClerkRoute
   DemoStoreRoute: typeof DemoStoreRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -269,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -320,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInventoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cart': {
+      id: '/api/cart'
+      path: '/api/cart'
+      fullPath: '/api/cart'
+      preLoaderRoute: typeof ApiCartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
       path: '/demo/start/server-funcs'
@@ -362,6 +451,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoApiNamesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/inventory/$id': {
+      id: '/api/inventory/$id'
+      path: '/$id'
+      fullPath: '/api/inventory/$id'
+      preLoaderRoute: typeof ApiInventoryIdRouteImport
+      parentRoute: typeof ApiInventoryRoute
+    }
+    '/api/cart/$cartId': {
+      id: '/api/cart/$cartId'
+      path: '/$cartId'
+      fullPath: '/api/cart/$cartId'
+      preLoaderRoute: typeof ApiCartCartIdRouteImport
+      parentRoute: typeof ApiCartRoute
+    }
     '/demo/start/ssr/': {
       id: '/demo/start/ssr/'
       path: '/demo/start/ssr'
@@ -390,6 +493,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cart/$cartId/items': {
+      id: '/api/cart/$cartId/items'
+      path: '/items'
+      fullPath: '/api/cart/$cartId/items'
+      preLoaderRoute: typeof ApiCartCartIdItemsRouteImport
+      parentRoute: typeof ApiCartCartIdRoute
+    }
+    '/api/cart/$cartId/items/$itemId': {
+      id: '/api/cart/$cartId/items/$itemId'
+      path: '/$itemId'
+      fullPath: '/api/cart/$cartId/items/$itemId'
+      preLoaderRoute: typeof ApiCartCartIdItemsItemIdRouteImport
+      parentRoute: typeof ApiCartCartIdItemsRoute
+    }
   }
 }
 
@@ -405,10 +522,58 @@ const ShopRouteChildren: ShopRouteChildren = {
 
 const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
 
+interface ApiCartCartIdItemsRouteChildren {
+  ApiCartCartIdItemsItemIdRoute: typeof ApiCartCartIdItemsItemIdRoute
+}
+
+const ApiCartCartIdItemsRouteChildren: ApiCartCartIdItemsRouteChildren = {
+  ApiCartCartIdItemsItemIdRoute: ApiCartCartIdItemsItemIdRoute,
+}
+
+const ApiCartCartIdItemsRouteWithChildren =
+  ApiCartCartIdItemsRoute._addFileChildren(ApiCartCartIdItemsRouteChildren)
+
+interface ApiCartCartIdRouteChildren {
+  ApiCartCartIdItemsRoute: typeof ApiCartCartIdItemsRouteWithChildren
+}
+
+const ApiCartCartIdRouteChildren: ApiCartCartIdRouteChildren = {
+  ApiCartCartIdItemsRoute: ApiCartCartIdItemsRouteWithChildren,
+}
+
+const ApiCartCartIdRouteWithChildren = ApiCartCartIdRoute._addFileChildren(
+  ApiCartCartIdRouteChildren,
+)
+
+interface ApiCartRouteChildren {
+  ApiCartCartIdRoute: typeof ApiCartCartIdRouteWithChildren
+}
+
+const ApiCartRouteChildren: ApiCartRouteChildren = {
+  ApiCartCartIdRoute: ApiCartCartIdRouteWithChildren,
+}
+
+const ApiCartRouteWithChildren =
+  ApiCartRoute._addFileChildren(ApiCartRouteChildren)
+
+interface ApiInventoryRouteChildren {
+  ApiInventoryIdRoute: typeof ApiInventoryIdRoute
+}
+
+const ApiInventoryRouteChildren: ApiInventoryRouteChildren = {
+  ApiInventoryIdRoute: ApiInventoryIdRoute,
+}
+
+const ApiInventoryRouteWithChildren = ApiInventoryRoute._addFileChildren(
+  ApiInventoryRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CartRoute: CartRoute,
   ShopRoute: ShopRouteWithChildren,
-  ApiInventoryRoute: ApiInventoryRoute,
+  ApiCartRoute: ApiCartRouteWithChildren,
+  ApiInventoryRoute: ApiInventoryRouteWithChildren,
   DemoClerkRoute: DemoClerkRoute,
   DemoStoreRoute: DemoStoreRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
