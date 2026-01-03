@@ -117,7 +117,6 @@ async function enrichInventoryItem(
   const brand = cleanedData.brand || parsed.brand || ''
   const model = cleanedData.model || parsed.model || item.name
   const size = cleanedData.size || (parsed.size ? convertSizeToStandard(parsed.size) : undefined)
-  const variant = cleanedData.variant
   const cleanedName = cleanedData.cleanedName || item.name
 
   // Build search query from cleaned data
@@ -130,7 +129,7 @@ async function enrichInventoryItem(
     brand,
     model,
     size,
-    variant,
+    variant: undefined,
     price: item.price,
     stockCount: item.stockCount,
     matched: cleanedData.brand !== '',

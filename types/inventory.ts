@@ -49,7 +49,7 @@ export interface EnrichedInventoryItem {
   originalName: string
   brand: string
   model: string
-  size?: 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'
+  size?: string // Sneaker sizes (7y, 8.5w, 12) or apparel sizes (S, M, L, XL, 2XL)
   variant?: string // For non-apparel items (e.g., "Macaron", "Strawberry")
   price?: number
   stockCount?: number
