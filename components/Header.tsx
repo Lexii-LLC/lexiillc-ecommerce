@@ -137,11 +137,11 @@ export default function Header() {
             />
           </Link>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Menu - Hidden on mobile, hover on desktop */}
           {isShopHovered && manufacturers && manufacturers.length > 0 && (
-            <div className="absolute top-full left-0 pt-2 w-48">
+            <div className="hidden md:block absolute top-full left-0 pt-2 w-48 z-50">
               <div className="bg-gray-900 border border-gray-800 rounded-lg shadow-2xl overflow-hidden">
-                <div className="py-2">
+                <div className="py-2 max-h-80 overflow-y-auto">
                   <Link
                     href="/shop"
                     className="block px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"

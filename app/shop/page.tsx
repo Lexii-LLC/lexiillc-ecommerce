@@ -474,7 +474,7 @@ function ProductCard({ item }: { item: EnrichedInventoryItem }) {
               <ShoppingBag className="w-24 h-24 text-gray-600" />
             </div>
           )}
-          {!item.matched && (
+          {!imageUrl && (
             <div className="absolute top-3 right-3 bg-yellow-500 text-black text-xs px-2 py-1 rounded font-bold">
               No Image
             </div>
