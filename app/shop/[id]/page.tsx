@@ -259,104 +259,133 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
               {/* Color Selector */}
               {colors.length > 1 && (
-                <div className="pt-4 space-y-3">
-                  <span className="text-gray-400 font-medium uppercase text-sm tracking-wider">Select Color</span>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => {
-                           setSelectedColor(color)
-                           const variants = variantsByColor[color] || []
-                           const firstInStock = variants.find((v: ProductVariant) => v.stock_quantity > 0)
-                           if (firstInStock?.size) setSelectedSize(firstInStock.size)
-                           else if (variants[0]?.size) setSelectedSize(variants[0].size || '')
-                        }}
-                        className={`
-                          px-4 py-2 border rounded-lg font-bold text-sm transition-all duration-200
-                          ${effectiveColor === color
-                            ? 'bg-white text-black border-white ring-2 ring-white/50' 
-                            : 'bg-transparent text-white border-gray-700 hover:border-gray-500 hover:bg-gray-800'
-                          }
-                        `}
-                      >
-                        {color}
-                      </button>
-                    ))}
+                <div className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-bold uppercase text-sm tracking-wider">
+                      Color
+                    </span>
+                    <span className="text-gray-400 text-sm">
+                      {colors.length} options
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {colors.map((color) => {
+                      const colorVariants = variantsByColor[color] || []
+                      const totalStock = colorVariants.reduce((sum, v) => sum + v.stock_quantity, 0)
+                      const isSelected = effectiveColor === color
+                      
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => {
+                            setSelectedColor(color)
+                            const variants = variantsByColor[color] || []
+                            const firstInStock = variants.find((v: ProductVariant) => v.stock_quantity > 0)
+                            if (firstInStock?.size) setSelectedSize(firstInStock.size)
+                            else if (variants[0]?.size) setSelectedSize(variants[0].size || '')
+                          }}
+                          className={`
+                            relative px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300
+                            ${isSelected
+                              ? 'bg-gradient-to-r from-white to-gray-100 text-black shadow-lg shadow-white/20 scale-105' 
+                              : 'bg-gray-900 text-white border border-gray-700 hover:border-gray-500 hover:bg-gray-800'
+                            }
+                          `}
+                        >
+                          <span>{color}</span>
+                          {totalStock > 0 && (
+                            <span className={`ml-2 text-xs ${isSelected ? 'text-gray-600' : 'text-gray-500'}`}>
+                              ({totalStock})
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Variant / Size Selector */}
+              {/* Size Selector */}
               {variantsByColor[effectiveColor]?.length > 0 ? (
-                 <div className="pt-4 space-y-3">
-                   <div className="flex justify-between items-center">
-                     <span className="text-gray-400 font-medium uppercase text-sm tracking-wider">Select Size</span>
-                     {effectiveSize && (
-                       <span className="text-white font-bold">{effectiveSize}</span>
-                     )}
-                   </div>
-                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                     {variantsByColor[effectiveColor].map((variant) => (
-                       <button
-                         key={variant.id}
-                         onClick={() => setSelectedSize(variant.size || '')}
-                         disabled={variant.stock_quantity === 0}
-                         className={`
-                           px-2 py-3 border rounded-lg font-bold text-sm transition-all duration-200
-                           ${effectiveSize === variant.size 
-                             ? 'bg-white text-black border-white ring-2 ring-white/50' 
-                             : variant.stock_quantity === 0
-                               ? 'bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed opacity-50'
-                               : 'bg-transparent text-white border-gray-700 hover:border-gray-500 hover:bg-gray-800'
-                           }
-                         `}
-                       >
-                         {variant.size}
-                       </button>
-                     ))}
-                   </div>
-                 </div>
+                <div className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-bold uppercase text-sm tracking-wider">
+                      Size
+                    </span>
+                    <span className="text-gray-400 text-sm">
+                      {variantsByColor[effectiveColor].filter(v => v.stock_quantity > 0).length} available
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                    {variantsByColor[effectiveColor].map((variant) => {
+                      const isSelected = effectiveSize === variant.size
+                      const isOutOfStock = variant.stock_quantity === 0
+                      
+                      return (
+                        <button
+                          key={variant.id}
+                          onClick={() => setSelectedSize(variant.size || '')}
+                          disabled={isOutOfStock}
+                          title={isOutOfStock ? 'Out of Stock' : `${variant.stock_quantity} in stock`}
+                          className={`
+                            relative group px-3 py-4 rounded-xl font-bold text-sm transition-all duration-300
+                            ${isSelected
+                              ? 'bg-white text-black shadow-lg shadow-white/20 scale-105' 
+                              : isOutOfStock
+                                ? 'bg-gray-900/50 text-gray-600 border border-gray-800 cursor-not-allowed line-through'
+                                : 'bg-gray-900 text-white border border-gray-700 hover:border-white hover:bg-gray-800'
+                            }
+                          `}
+                        >
+                          <span className="block">{variant.size}</span>
+                          {/* Stock indicator dot */}
+                          {!isOutOfStock && !isSelected && (
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-green-500 rounded-full opacity-75"></span>
+                          )}
+                          {/* Hover tooltip showing stock */}
+                          {!isOutOfStock && (
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                              {variant.stock_quantity} in stock
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               ) : (
                 /* Single Item Details (Legacy/No variants) */
-                <div className="space-y-4 pt-4">
-                    {product.size && (
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 font-medium min-w-[80px]">
-                          Size:
-                        </span>
-                        <span className="text-white font-bold text-lg">
-                          {product.size}
-                        </span>
-                      </div>
-                    )}
+                <div className="space-y-4 pt-6">
+                  {product.size && (
+                    <div className="flex items-center gap-3 p-4 bg-gray-900 rounded-xl border border-gray-800">
+                      <span className="text-gray-400 font-medium">Size:</span>
+                      <span className="text-white font-bold text-lg">{product.size}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Stock Status */}
-              <div className="space-y-4 pt-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-400 font-medium min-w-[80px]">
-                      Stock:
-                    </span>
-                    {stockCount > 0 ? (
-                      <span className="text-green-400 font-bold">
-                        {stockCount}{' '}
-                        {stockCount === 1 ? 'item' : 'items'} available
-                      </span>
-                    ) : (
-                      <span className="text-red-400 font-bold">
-                        Out of Stock
-                      </span>
-                    )}
-                  </div>
+              <div className="pt-6">
+                <div className={`
+                  inline-flex items-center gap-3 px-5 py-3 rounded-xl font-bold
+                  ${stockCount > 0 
+                    ? 'bg-green-500/10 border border-green-500/30 text-green-400' 
+                    : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                  }
+                `}>
+                  <span className={`w-3 h-3 rounded-full ${stockCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                  {stockCount > 0 ? (
+                    <span>{stockCount} {stockCount === 1 ? 'item' : 'items'} available</span>
+                  ) : (
+                    <span>Out of Stock</span>
+                  )}
+                </div>
 
                 {product.releaseDate && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-400 font-medium min-w-[80px]">
-                      Release:
-                    </span>
+                  <div className="flex items-center gap-3 mt-4 text-gray-400">
+                    <Calendar className="w-5 h-5" />
+                    <span className="font-medium">Release:</span>
                     <span className="text-white">{product.releaseDate}</span>
                   </div>
                 )}
