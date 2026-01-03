@@ -33,11 +33,12 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get products from Supabase (already normalized)
+    // Get products from Supabase (only normalized + in stock)
     const offset = (page - 1) * pageSize
     const products = await getProducts({
       brand,
       inStock: true,
+      isNormalized: true,
       limit: pageSize,
       offset,
     })
