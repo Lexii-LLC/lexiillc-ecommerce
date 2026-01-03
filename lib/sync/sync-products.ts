@@ -129,7 +129,7 @@ export async function normalizeUnnormalizedProducts(
              
              // Create new parent
              parent = await upsertProduct({
-               clover_id: null as any, // Parents don't have clover IDs
+               clover_id: `PARENT_${aiResult.brand}_${aiResult.model}`.replace(/\s+/g, '_').toUpperCase(),
                raw_name: `${aiResult.brand || ''} ${aiResult.model || ''}`.trim(),
                clean_name: `${aiResult.brand || ''} ${aiResult.model || ''}`.trim(),
                clean_brand: aiResult.brand,

@@ -61,7 +61,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
   // Group variants by color
   const variantsByColor = useMemo(() => {
-    if (!product?.variants) return {}
+    if (!product || !product.variants) return {}
     const groups: Record<string, ProductVariant[]> = {}
     
     product.variants.forEach((v: ProductVariant) => {
@@ -71,34 +71,34 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     })
     
     return groups
-  }, [product?.variants])
+  }, [product])
 
   const colors = Object.keys(variantsByColor)
 
-  // Set default color/size when product loads (only once)
-  useEffect(() => {
-    if (product?.variants && product.variants.length > 0 && !selectedColor) {
-      // 1. Pick first color
-      const firstColor = product.variants[0].color || 'Default'
-      setSelectedColor(firstColor)
+  // Determine effective selections (use state if set, otherwise derive default)
+  const effectiveColor = useMemo(() => {
+    if (selectedColor) return selectedColor
+    if (colors.length > 0) return colors[0]
+    return ''
+  }, [selectedColor, colors])
 
-      // 2. Pick first available size in that color
-      const variantsInColor = variantsByColor[firstColor] || []
-      const firstInStock = variantsInColor.find((v: ProductVariant) => v.stock_quantity > 0)
-      if (firstInStock && firstInStock.size) {
-        setSelectedSize(firstInStock.size)
-      } else if (variantsInColor[0]?.size) {
-        setSelectedSize(variantsInColor[0].size)
-      }
-    }
-  }, [product, variantsByColor, selectedColor])
+  const effectiveSize = useMemo(() => {
+    if (selectedSize) return selectedSize
+    
+    const variantsInColor = variantsByColor[effectiveColor] || []
+    // Default to first available size
+    const firstInStock = variantsInColor.find((v: ProductVariant) => v.stock_quantity > 0)
+    if (firstInStock?.size) return firstInStock.size
+    if (variantsInColor[0]?.size) return variantsInColor[0].size
+    return ''
+  }, [selectedSize, effectiveColor, variantsByColor])
 
-  // Get currently selected variant object
+  // Get currently selected variant object based on effective selection
   const selectedVariant = useMemo(() => {
-    if (!selectedColor) return null
-    const variants = variantsByColor[selectedColor] || []
-    return variants.find((v: ProductVariant) => v.size === selectedSize) || variants[0]
-  }, [variantsByColor, selectedColor, selectedSize])
+    if (!effectiveColor) return null
+    const variants = variantsByColor[effectiveColor] || []
+    return variants.find((v: ProductVariant) => v.size === effectiveSize) || variants[0]
+  }, [variantsByColor, effectiveColor, effectiveSize])
 
   if (isLoading) {
     return (
@@ -164,7 +164,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const displayName = product.clean_name || product.raw_name || product.name || 'Unknown Product'
   const displayBrand = product.clean_brand || product.brand
   const displayModel = product.clean_model || product.model
-  const displayColorway = selectedColor !== 'Default' ? selectedColor : (product.clean_colorway || product.colorway)
+  const displayColorway = effectiveColor !== 'Default' ? effectiveColor : (product.clean_colorway || product.colorway)
 
   // Price logic: use selected variant price, fallback to product price
   const price = selectedVariant?.price ?? product.price
@@ -268,13 +268,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                         onClick={() => {
                            setSelectedColor(color)
                            const variants = variantsByColor[color] || []
-                           const firstInStock = variants.find(v => v.stock_quantity > 0)
+                           const firstInStock = variants.find((v: ProductVariant) => v.stock_quantity > 0)
                            if (firstInStock?.size) setSelectedSize(firstInStock.size)
                            else if (variants[0]?.size) setSelectedSize(variants[0].size || '')
                         }}
                         className={`
                           px-4 py-2 border rounded-lg font-bold text-sm transition-all duration-200
-                          ${selectedColor === color
+                          ${effectiveColor === color
                             ? 'bg-white text-black border-white ring-2 ring-white/50' 
                             : 'bg-transparent text-white border-gray-700 hover:border-gray-500 hover:bg-gray-800'
                           }
@@ -288,23 +288,23 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               )}
 
               {/* Variant / Size Selector */}
-              {variantsByColor[selectedColor]?.length > 0 ? (
+              {variantsByColor[effectiveColor]?.length > 0 ? (
                  <div className="pt-4 space-y-3">
                    <div className="flex justify-between items-center">
                      <span className="text-gray-400 font-medium uppercase text-sm tracking-wider">Select Size</span>
-                     {selectedSize && (
-                       <span className="text-white font-bold">{selectedSize}</span>
+                     {effectiveSize && (
+                       <span className="text-white font-bold">{effectiveSize}</span>
                      )}
                    </div>
                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                     {variantsByColor[selectedColor].map((variant) => (
+                     {variantsByColor[effectiveColor].map((variant) => (
                        <button
                          key={variant.id}
                          onClick={() => setSelectedSize(variant.size || '')}
                          disabled={variant.stock_quantity === 0}
                          className={`
                            px-2 py-3 border rounded-lg font-bold text-sm transition-all duration-200
-                           ${selectedSize === variant.size 
+                           ${effectiveSize === variant.size 
                              ? 'bg-white text-black border-white ring-2 ring-white/50' 
                              : variant.stock_quantity === 0
                                ? 'bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed opacity-50'

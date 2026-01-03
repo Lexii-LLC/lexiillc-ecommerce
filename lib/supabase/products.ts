@@ -363,7 +363,7 @@ export async function findParentProduct(
 ): Promise<Product | null> {
   const supabase = getPublicClient()
 
-  let query = supabase
+  const query = supabase
     .from('products')
     .select('*')
     .eq('is_parent', true)

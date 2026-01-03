@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProductById, getProductVariants, getProductByCloverById } from '@/lib/supabase/products'
+import type { ProductVariant } from '@/types/inventory'
 
 interface RouteParams {
   params: Promise<{
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 1. Try to find by UUID (standard case for Supabase products)
     let product = await getProductById(decodedId)
-    let variants: any[] = []
+    let variants: ProductVariant[] = []
 
     // 2. If not found, try by Clover ID (fallback for legacy/raw items)
     if (!product) {
