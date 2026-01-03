@@ -119,7 +119,7 @@ export default function ShopPage() {
   const filteredAndSortedItems = useMemo(() => {
     if (!inventory) return []
 
-    let filtered = inventory.filter((item) => {
+    const filtered = inventory.filter((item) => {
       const name = item.clean_name || item.name || ''
       const brand = item.clean_brand || item.brand || ''
       const model = item.clean_model || item.model || ''

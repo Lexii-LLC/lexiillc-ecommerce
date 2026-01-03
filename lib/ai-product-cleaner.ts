@@ -62,7 +62,7 @@ export async function cleanProductNameWithAI(
 
   // Fallback to Hugging Face
   if (hfKey) {
-    console.log('Using Hugging Face fallback for:', originalName)
+    console.warn('Using Hugging Face fallback for:', originalName)
     try {
       const result = await callHuggingFaceAPI(originalName, hfKey)
       if (result) {
@@ -78,8 +78,7 @@ export async function cleanProductNameWithAI(
 }
 
 async function callGroqAPI(originalName: string, apiKey: string): Promise<CleanedProductData | null> {
-  try {
-    const prompt = `You are a product data parser for a shoe and streetwear store. Parse this product name and extract structured data.
+  const prompt = `You are a product data parser for a shoe and streetwear store. Parse this product name and extract structured data.
 
 Product: "${originalName}"
 
@@ -109,35 +108,32 @@ RESPOND WITH ONLY VALID JSON:
   "confidence": "high" | "medium" | "low"
 }`
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 256,
-        temperature: 0.1,
-      }),
-    })
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 256,
+      temperature: 0.1,
+    }),
+  })
 
-    if (!response.ok) {
-      // Throw 429 errors to trigger fallback
-      if (response.status === 429) {
-        throw new Error('Groq Rate Limited (429)')
-      }
-      const text = await response.text()
-      console.error('Groq API error:', response.status, text)
-      return null
+  if (!response.ok) {
+    // Throw 429 errors to trigger fallback
+    if (response.status === 429) {
+      throw new Error('Groq Rate Limited (429)')
     }
-
-    const data = await response.json()
-    return parseAIResponse(data.choices?.[0]?.message?.content, originalName)
-  } catch (error) {
-    throw error // Re-throw to trigger fallback
+    const text = await response.text()
+    console.error('Groq API error:', response.status, text)
+    return null
   }
+
+  const data = await response.json()
+  return parseAIResponse(data.choices?.[0]?.message?.content, originalName)
 }
 
 async function callHuggingFaceAPI(originalName: string, apiKey: string): Promise<CleanedProductData | null> {
@@ -181,7 +177,7 @@ JSON format only. No markdown. [/INST]`
   }
 }
 
-function parseAIResponse(text: string | undefined, originalName: string): CleanedProductData | null {
+function parseAIResponse(text: string | undefined, _originalName: string): CleanedProductData | null {
   if (!text) return null
   
   try {

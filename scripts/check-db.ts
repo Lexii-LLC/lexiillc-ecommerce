@@ -34,7 +34,7 @@ async function checkCounts() {
   console.log(`In Stock: ${inStock}`)
   console.log(`Normalized + In Stock (Visible on site): ${normalizedAndInStock}`)
 
-  if (normalized > 0) {
+  if (normalized && normalized > 0) {
       const { data: sample } = await supabase
         .from('products')
         .select('clean_name, product_type, is_normalized')

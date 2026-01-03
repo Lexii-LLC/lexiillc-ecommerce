@@ -3,7 +3,7 @@
 import { use } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import type { EnrichedInventoryItem } from '@/types/inventory'
 import {
   ShoppingBag,

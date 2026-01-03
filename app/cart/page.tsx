@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import type { EnrichedInventoryItem } from '@/types/inventory'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const _fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function CartPage() {
   const {
