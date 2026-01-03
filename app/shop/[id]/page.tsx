@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState, useEffect } from 'react'
+import { use, useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
 import type { EnrichedInventoryItem, ProductVariant } from '@/types/inventory'
@@ -42,7 +42,8 @@ interface ProductDetailPageProps {
 
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { id } = use(params)
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
+  const [selectedColor, setSelectedColor] = useState<string>('')
+  const [selectedSize, setSelectedSize] = useState<string>('')
 
   // Decode and re-encode to handle special characters
   const decodedId = decodeURIComponent(id)
@@ -58,14 +59,46 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     { revalidateOnFocus: false }
   )
 
-  // Set default variant when product loads
+  // Group variants by color
+  const variantsByColor = useMemo(() => {
+    if (!product?.variants) return {}
+    const groups: Record<string, ProductVariant[]> = {}
+    
+    product.variants.forEach((v: ProductVariant) => {
+      const color = v.color || 'Default'
+      if (!groups[color]) groups[color] = []
+      groups[color].push(v)
+    })
+    
+    return groups
+  }, [product?.variants])
+
+  const colors = Object.keys(variantsByColor)
+
+  // Set default color/size when product loads (only once)
   useEffect(() => {
-    if (product?.variants && product.variants.length > 0) {
-      // Find first in-stock variant or default to first
-      const firstInStock = product.variants.find(v => v.stock_quantity > 0)
-      setSelectedVariant(firstInStock || product.variants[0])
+    if (product?.variants && product.variants.length > 0 && !selectedColor) {
+      // 1. Pick first color
+      const firstColor = product.variants[0].color || 'Default'
+      setSelectedColor(firstColor)
+
+      // 2. Pick first available size in that color
+      const variantsInColor = variantsByColor[firstColor] || []
+      const firstInStock = variantsInColor.find((v: ProductVariant) => v.stock_quantity > 0)
+      if (firstInStock && firstInStock.size) {
+        setSelectedSize(firstInStock.size)
+      } else if (variantsInColor[0]?.size) {
+        setSelectedSize(variantsInColor[0].size)
+      }
     }
-  }, [product])
+  }, [product, variantsByColor, selectedColor])
+
+  // Get currently selected variant object
+  const selectedVariant = useMemo(() => {
+    if (!selectedColor) return null
+    const variants = variantsByColor[selectedColor] || []
+    return variants.find((v: ProductVariant) => v.size === selectedSize) || variants[0]
+  }, [variantsByColor, selectedColor, selectedSize])
 
   if (isLoading) {
     return (
@@ -131,7 +164,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const displayName = product.clean_name || product.raw_name || product.name || 'Unknown Product'
   const displayBrand = product.clean_brand || product.brand
   const displayModel = product.clean_model || product.model
-  const displayColorway = product.clean_model ? product.clean_colorway : product.colorway
+  const displayColorway = selectedColor !== 'Default' ? selectedColor : (product.clean_colorway || product.colorway)
 
   // Price logic: use selected variant price, fallback to product price
   const price = selectedVariant?.price ?? product.price
@@ -224,24 +257,54 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 )}
               </div>
 
+              {/* Color Selector */}
+              {colors.length > 1 && (
+                <div className="pt-4 space-y-3">
+                  <span className="text-gray-400 font-medium uppercase text-sm tracking-wider">Select Color</span>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => {
+                           setSelectedColor(color)
+                           const variants = variantsByColor[color] || []
+                           const firstInStock = variants.find(v => v.stock_quantity > 0)
+                           if (firstInStock?.size) setSelectedSize(firstInStock.size)
+                           else if (variants[0]?.size) setSelectedSize(variants[0].size || '')
+                        }}
+                        className={`
+                          px-4 py-2 border rounded-lg font-bold text-sm transition-all duration-200
+                          ${selectedColor === color
+                            ? 'bg-white text-black border-white ring-2 ring-white/50' 
+                            : 'bg-transparent text-white border-gray-700 hover:border-gray-500 hover:bg-gray-800'
+                          }
+                        `}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Variant / Size Selector */}
-              {product.variants && product.variants.length > 0 ? (
+              {variantsByColor[selectedColor]?.length > 0 ? (
                  <div className="pt-4 space-y-3">
                    <div className="flex justify-between items-center">
                      <span className="text-gray-400 font-medium uppercase text-sm tracking-wider">Select Size</span>
-                     {selectedVariant && (
-                       <span className="text-white font-bold">{selectedVariant.size}</span>
+                     {selectedSize && (
+                       <span className="text-white font-bold">{selectedSize}</span>
                      )}
                    </div>
                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                     {product.variants.map((variant) => (
+                     {variantsByColor[selectedColor].map((variant) => (
                        <button
                          key={variant.id}
-                         onClick={() => setSelectedVariant(variant)}
+                         onClick={() => setSelectedSize(variant.size || '')}
                          disabled={variant.stock_quantity === 0}
                          className={`
                            px-2 py-3 border rounded-lg font-bold text-sm transition-all duration-200
-                           ${selectedVariant?.id === variant.id 
+                           ${selectedSize === variant.size 
                              ? 'bg-white text-black border-white ring-2 ring-white/50' 
                              : variant.stock_quantity === 0
                                ? 'bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed opacity-50'

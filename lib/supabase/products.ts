@@ -359,8 +359,7 @@ export async function getProductStats(): Promise<{
  */
 export async function findParentProduct(
   brand: string,
-  model: string,
-  colorway?: string
+  model: string
 ): Promise<Product | null> {
   const supabase = getPublicClient()
 
@@ -370,10 +369,6 @@ export async function findParentProduct(
     .eq('is_parent', true)
     .eq('clean_brand', brand)
     .eq('clean_model', model)
-
-  if (colorway) {
-    query = query.eq('clean_colorway', colorway)
-  }
 
   // Safety: Limit 1
   const { data, error } = await query.limit(1).maybeSingle()

@@ -116,19 +116,25 @@ export async function normalizeUnnormalizedProducts(
         const aiResult = await cleanProductNameWithAI(product.raw_name)
 
         if (aiResult && aiResult.confidence !== 'low') {
-          // 1. Identify Parent Product
-          // Look for existing parent by brand + model + colorway
-          let parent = await findParentProduct(aiResult.brand, aiResult.model, aiResult.colorway)
+          // 1. Try to find existing parent (Brand + Model only, Color is now a variant)
+          const existingParent = await findParentProduct(
+            aiResult.brand,
+            aiResult.model
+          )
+
+          let parent = existingParent
 
           if (!parent) {
+             console.log(`[Normalize] 1. Creating new parent for ${aiResult.brand} ${aiResult.model}`)
+             
              // Create new parent
              parent = await upsertProduct({
                clover_id: null as any, // Parents don't have clover IDs
-               raw_name: `${aiResult.brand || ''} ${aiResult.model || ''} ${aiResult.colorway || ''}`.trim(),
-               clean_name: `${aiResult.brand || ''} ${aiResult.model || ''} ${aiResult.colorway || ''}`.trim(),
+               raw_name: `${aiResult.brand || ''} ${aiResult.model || ''}`.trim(),
+               clean_name: `${aiResult.brand || ''} ${aiResult.model || ''}`.trim(),
                clean_brand: aiResult.brand,
                clean_model: aiResult.model,
-               clean_colorway: aiResult.colorway || undefined,
+               clean_colorway: undefined, // Parents don't have a single color anymore
                product_type: aiResult.productType,
                is_normalized: true,
                is_parent: true,
@@ -138,12 +144,12 @@ export async function normalizeUnnormalizedProducts(
              console.log(`[Normalize] + Created Parent: ${parent.clean_name}`)
           }
 
-          // 2. Insert Variant linked to Parent
+          // 2. Insert as a Variant of this Parent
           await insertVariant({
             product_id: parent.id,
             clover_item_id: product.clover_id,
             size: aiResult.size,
-            color: aiResult.colorway, // Store colorway in variant too if useful
+            color: aiResult.colorway, // Store color on the variant
             condition: aiResult.condition,
             variant_number: aiResult.variantNumber,
             price: product.price ?? undefined,
