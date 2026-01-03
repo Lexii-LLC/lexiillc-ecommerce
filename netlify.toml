@@ -9,9 +9,19 @@
   # Skip scanning for public env vars (intentionally bundled for client)
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,CLOVER_API_BASE_URL"
 
+# Cache Next.js build output
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
 # Scheduled function for Clover sync (runs daily at 3 AM UTC)
 [functions."app/api/cron/sync"]
   schedule = "0 3 * * *"
+
+# Build cache configuration
+[[plugins]]
+  package = "netlify-plugin-cache"
+  [plugins.inputs]
+    paths = [
+      ".next/cache",
+      "node_modules/.cache"
+    ]
