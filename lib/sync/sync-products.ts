@@ -8,8 +8,12 @@ import { fetchCloverInventoryServer } from '../clover-api'
 import { cleanProductNameWithAI } from '../ai-product-cleaner'
 import {
   upsertProducts,
+  upsertProduct,
   getUnnormalizedProducts,
   updateProductByCloverById,
+  findParentProduct,
+  insertVariant,
+  updateParentStock,
   type ProductInsert,
 } from '../supabase/products'
 
@@ -108,10 +112,50 @@ export async function normalizeUnnormalizedProducts(
 
     for (const product of unnormalized) {
       try {
-        // Call Groq AI for normalization
+        // Call Groq / HF AI for normalization
         const aiResult = await cleanProductNameWithAI(product.raw_name)
 
         if (aiResult && aiResult.confidence !== 'low') {
+          // 1. Identify Parent Product
+          // Look for existing parent by brand + model + colorway
+          let parent = await findParentProduct(aiResult.brand, aiResult.model, aiResult.colorway)
+
+          if (!parent) {
+             // Create new parent
+             parent = await upsertProduct({
+               clover_id: null as any, // Parents don't have clover IDs
+               raw_name: `${aiResult.brand || ''} ${aiResult.model || ''} ${aiResult.colorway || ''}`.trim(),
+               clean_name: `${aiResult.brand || ''} ${aiResult.model || ''} ${aiResult.colorway || ''}`.trim(),
+               clean_brand: aiResult.brand,
+               clean_model: aiResult.model,
+               clean_colorway: aiResult.colorway || undefined,
+               product_type: aiResult.productType,
+               is_normalized: true,
+               is_parent: true,
+               price: product.price ?? undefined, // Use price from first variant as baseline
+               stock_quantity: 0, // Parents don't track stock directly (aggregate from variants)
+             })
+             console.log(`[Normalize] + Created Parent: ${parent.clean_name}`)
+          }
+
+          // 2. Insert Variant linked to Parent
+          await insertVariant({
+            product_id: parent.id,
+            clover_item_id: product.clover_id,
+            size: aiResult.size,
+            color: aiResult.colorway, // Store colorway in variant too if useful
+            condition: aiResult.condition,
+            variant_number: aiResult.variantNumber,
+            price: product.price ?? undefined,
+            stock_quantity: product.stock_quantity,
+          })
+
+          // Update Parent Stock Quantity (sum of all variants)
+          await updateParentStock(parent.id)
+
+          // 3. Mark raw product as normalized (and potentially hide it?)
+          // For now, we keep it as normalized so we don't re-process it.
+          // In future refactor, we might delete this row and rely only on product_variants table.
           await updateProductByCloverById(product.clover_id, {
             clean_name: aiResult.cleanedName,
             clean_brand: aiResult.brand,
@@ -120,15 +164,18 @@ export async function normalizeUnnormalizedProducts(
             clean_colorway: aiResult.colorway || undefined,
             product_type: aiResult.productType,
             is_normalized: true,
+            is_parent: false, // Ensure it's marked as child/raw
           })
+
           result.normalized++
-          console.warn(`[Normalize] ✓ ${product.raw_name} -> ${aiResult.brand} ${aiResult.model} (${aiResult.productType})`)
+          console.warn(`[Normalize] ✓ ${product.raw_name} -> Parent: ${parent.clean_name} | Variant: ${aiResult.size}`)
         } else {
           // Mark as normalized even if AI couldn't parse (so we don't retry)
           await updateProductByCloverById(product.clover_id, {
             clean_name: product.raw_name,
             product_type: 'other',
             is_normalized: true,
+            is_parent: false,
           })
           result.synced++
           console.warn(`[Normalize] ~ ${product.raw_name} (could not parse)`)

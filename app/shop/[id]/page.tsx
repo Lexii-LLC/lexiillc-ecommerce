@@ -1,9 +1,9 @@
 'use client'
 
-import { use } from 'react'
+import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import type { EnrichedInventoryItem } from '@/types/inventory'
+import type { EnrichedInventoryItem, ProductVariant } from '@/types/inventory'
 import {
   ArrowLeft,
   ShoppingBag,
@@ -39,8 +39,10 @@ interface ProductDetailPageProps {
   params: Promise<{ id: string }>
 }
 
+
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { id } = use(params)
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
 
   // Decode and re-encode to handle special characters
   const decodedId = decodeURIComponent(id)
@@ -55,6 +57,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     fetcher,
     { revalidateOnFocus: false }
   )
+
+  // Set default variant when product loads
+  useEffect(() => {
+    if (product?.variants && product.variants.length > 0) {
+      // Find first in-stock variant or default to first
+      const firstInStock = product.variants.find(v => v.stock_quantity > 0)
+      setSelectedVariant(firstInStock || product.variants[0])
+    }
+  }, [product])
 
   if (isLoading) {
     return (
@@ -117,6 +128,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         ? [product.imageUrl]
         : []
 
+  const displayName = product.clean_name || product.raw_name || product.name || 'Unknown Product'
+  const displayBrand = product.clean_brand || product.brand
+  const displayModel = product.clean_model || product.model
+  const displayColorway = product.clean_model ? product.clean_colorway : product.colorway
+
+  // Price logic: use selected variant price, fallback to product price
+  const price = selectedVariant?.price ?? product.price
+  const stockCount = selectedVariant?.stock_quantity ?? product.stockCount ?? 0
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Back Button */}
@@ -142,7 +162,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 {images.length > 0 ? (
                   <img
                     src={images[0]}
-                    alt={product.name}
+                    alt={displayName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="eager"
                   />
@@ -161,7 +181,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                     >
                       <img
                         src={image}
-                        alt={`${product.name} view ${index + 2}`}
+                        alt={`${displayName} view ${index + 2}`}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -172,26 +192,26 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
             {/* Product Info */}
             <div className="flex flex-col justify-center space-y-6 pt-8 lg:pt-0">
-              {product.brand && (
+              {displayBrand && (
                 <p className="text-gray-400 text-sm uppercase tracking-wider font-medium">
-                  {product.brand}
+                  {displayBrand}
                 </p>
               )}
 
               <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight leading-tight">
-                {product.model || product.name}
+                {outputDisplayModel(displayModel, displayName)}
               </h1>
 
-              {product.colorway && (
-                <p className="text-xl text-gray-300">{product.colorway}</p>
+              {displayColorway && (
+                <p className="text-xl text-gray-300">{displayColorway}</p>
               )}
 
               {/* Price */}
               <div className="pt-4 border-t border-gray-800">
-                {product.price !== undefined ? (
+                {price !== undefined ? (
                   <div className="flex items-baseline gap-4">
                     <p className="text-5xl font-black text-white">
-                      ${(product.price / 100).toFixed(2)}
+                      ${(price / 100).toFixed(2)}
                     </p>
                     {product.retailPrice && product.retailPrice > 0 && (
                       <p className="text-xl text-gray-500 line-through">
@@ -204,28 +224,62 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 )}
               </div>
 
-              {/* Product Details */}
-              <div className="space-y-4 pt-4 border-t border-gray-800">
-                {product.size && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-400 font-medium min-w-[80px]">
-                      Size:
-                    </span>
-                    <span className="text-white font-bold text-lg">
-                      {product.size}
-                    </span>
-                  </div>
-                )}
+              {/* Variant / Size Selector */}
+              {product.variants && product.variants.length > 0 ? (
+                 <div className="pt-4 space-y-3">
+                   <div className="flex justify-between items-center">
+                     <span className="text-gray-400 font-medium uppercase text-sm tracking-wider">Select Size</span>
+                     {selectedVariant && (
+                       <span className="text-white font-bold">{selectedVariant.size}</span>
+                     )}
+                   </div>
+                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                     {product.variants.map((variant) => (
+                       <button
+                         key={variant.id}
+                         onClick={() => setSelectedVariant(variant)}
+                         disabled={variant.stock_quantity === 0}
+                         className={`
+                           px-2 py-3 border rounded-lg font-bold text-sm transition-all duration-200
+                           ${selectedVariant?.id === variant.id 
+                             ? 'bg-white text-black border-white ring-2 ring-white/50' 
+                             : variant.stock_quantity === 0
+                               ? 'bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed opacity-50'
+                               : 'bg-transparent text-white border-gray-700 hover:border-gray-500 hover:bg-gray-800'
+                           }
+                         `}
+                       >
+                         {variant.size}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+              ) : (
+                /* Single Item Details (Legacy/No variants) */
+                <div className="space-y-4 pt-4">
+                    {product.size && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 font-medium min-w-[80px]">
+                          Size:
+                        </span>
+                        <span className="text-white font-bold text-lg">
+                          {product.size}
+                        </span>
+                      </div>
+                    )}
+                </div>
+              )}
 
-                {product.stockCount !== undefined && (
+              {/* Stock Status */}
+              <div className="space-y-4 pt-4">
                   <div className="flex items-center gap-3">
                     <span className="text-gray-400 font-medium min-w-[80px]">
                       Stock:
                     </span>
-                    {product.stockCount > 0 ? (
+                    {stockCount > 0 ? (
                       <span className="text-green-400 font-bold">
-                        {product.stockCount}{' '}
-                        {product.stockCount === 1 ? 'item' : 'items'} available
+                        {stockCount}{' '}
+                        {stockCount === 1 ? 'item' : 'items'} available
                       </span>
                     ) : (
                       <span className="text-red-400 font-bold">
@@ -233,7 +287,6 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                       </span>
                     )}
                   </div>
-                )}
 
                 {product.releaseDate && (
                   <div className="flex items-center gap-3">
@@ -249,13 +302,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               {/* Action Buttons */}
               <div className="pt-6 space-y-4">
                 <AddToCartButton
-                  productId={product.id}
-                  disabled={product.stockCount === 0}
+                  productId={selectedVariant ? selectedVariant.id : product.id}
+                  disabled={stockCount === 0}
                   className="w-full text-lg"
                 />
 
                 <a
-                  href={`mailto:LexiiLLC24@gmail.com?subject=Inquiry about ${encodeURIComponent(product.name)}&body=Hi Lexii,%0D%0A%0D%0AI'm interested in learning more about: ${encodeURIComponent(product.name)}%0D%0A%0D%0A`}
+                  href={`mailto:LexiiLLC24@gmail.com?subject=Inquiry about ${encodeURIComponent(displayName)}&body=Hi Lexii,%0D%0A%0D%0AI'm interested in learning more about: ${encodeURIComponent(displayName)}%0D%0A%0D%0A`}
                   className="block w-full px-8 py-5 border-2 border-white hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all duration-300 text-lg uppercase tracking-wider active:scale-[0.98] text-center"
                 >
                   Contact Us
@@ -277,3 +330,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     </div>
   )
 }
+
+function outputDisplayModel(model?: string, name?: string) {
+  return model || name || 'Unknown Product'
+}
+

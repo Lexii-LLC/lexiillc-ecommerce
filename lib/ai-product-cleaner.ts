@@ -28,6 +28,9 @@ export interface CleanedProductData {
 /**
  * Clean and normalize a single product name using Groq API
  */
+/**
+ * Clean and normalize a single product name using Groq API with fallback to Hugging Face
+ */
 export async function cleanProductNameWithAI(
   originalName: string
 ): Promise<CleanedProductData | null> {
@@ -41,12 +44,40 @@ export async function cleanProductNameWithAI(
     }
   }
 
-  // Check for API key
-  const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) {
-    return null
+  const groqKey = process.env.GROQ_API_KEY
+  const hfKey = process.env.HUGGINGFACE_API_KEY || process.env.VITE_HUGGINGFACE_API_KEY
+
+  // Try Groq first
+  if (groqKey) {
+    try {
+      const result = await callGroqAPI(originalName, groqKey)
+      if (result) {
+        setCachedHFImprovement(originalName, JSON.stringify(result))
+        return result
+      }
+    } catch (error) {
+      console.warn('Groq API failed, trying fallback:', error)
+    }
   }
 
+  // Fallback to Hugging Face
+  if (hfKey) {
+    console.log('Using Hugging Face fallback for:', originalName)
+    try {
+      const result = await callHuggingFaceAPI(originalName, hfKey)
+      if (result) {
+        setCachedHFImprovement(originalName, JSON.stringify(result))
+        return result
+      }
+    } catch (error) {
+      console.error('Hugging Face fallback failed:', error)
+    }
+  }
+
+  return null
+}
+
+async function callGroqAPI(originalName: string, apiKey: string): Promise<CleanedProductData | null> {
   try {
     const prompt = `You are a product data parser for a shoe and streetwear store. Parse this product name and extract structured data.
 
@@ -93,59 +124,98 @@ RESPOND WITH ONLY VALID JSON:
     })
 
     if (!response.ok) {
-      console.error('Groq API error:', response.status, await response.text())
+      // Throw 429 errors to trigger fallback
+      if (response.status === 429) {
+        throw new Error('Groq Rate Limited (429)')
+      }
+      const text = await response.text()
+      console.error('Groq API error:', response.status, text)
       return null
     }
 
     const data = await response.json()
-    const text = data.choices?.[0]?.message?.content?.trim()
+    return parseAIResponse(data.choices?.[0]?.message?.content, originalName)
+  } catch (error) {
+    throw error // Re-throw to trigger fallback
+  }
+}
 
-    if (text) {
-      // Try to extract JSON from the response
-      let jsonStr = text
-      
-      // Remove markdown code blocks if present
-      if (text.includes('```json')) {
-        jsonStr = text.replace(/```json\s*/g, '').replace(/```\s*/g, '')
-      } else if (text.includes('```')) {
-        jsonStr = text.replace(/```\s*/g, '')
-      }
-      
-      try {
-        const parsed = JSON.parse(jsonStr.trim()) as CleanedProductData
-        
-        // Validate and fix common issues
-        if (parsed.cleanedName && parsed.brand !== undefined) {
-          // Fix duplicate brand in model (e.g., "Jordan Jordan 4" -> "Jordan 4")
-          if (parsed.model && parsed.brand && parsed.model.toLowerCase().startsWith(parsed.brand.toLowerCase())) {
-            parsed.model = parsed.model.substring(parsed.brand.length).trim()
-          }
-          
-          // Ensure productType is valid
-          if (!['sneaker', 'apparel', 'accessory', 'other'].includes(parsed.productType)) {
-            parsed.productType = 'other'
-          }
-          
-          // Normalize condition
-          if (parsed.condition && !['new', 'used', 'ds'].includes(parsed.condition)) {
-            parsed.condition = undefined
-          }
-          
-          // Cache the result
-          setCachedHFImprovement(originalName, JSON.stringify(parsed))
-          
-          return parsed
+async function callHuggingFaceAPI(originalName: string, apiKey: string): Promise<CleanedProductData | null> {
+  const prompt = `<s>[INST] You are a product data parser. Parse this product name and return raw JSON only.
+Product: "${originalName}"
+
+Extract: brand, model, productType (sneaker/apparel/accessory/other), size, colorway, condition (new/used/ds).
+JSON format only. No markdown. [/INST]`
+
+  try {
+    const response = await fetch('https://router.huggingface.co/mistralai/Mistral-7B-Instruct-v0.2', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          max_new_tokens: 256,
+          temperature: 0.1,
+          return_full_text: false
         }
-      } catch (parseError) {
-        console.warn('Failed to parse AI response:', parseError)
-      }
+      }),
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      console.error('HF API error:', response.status, text)
+      return null
     }
 
-    return null
+    const data = await response.json()
+    // HF Inference API returns array of outputs or simple object depending on model
+    const text = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text
+    
+    return parseAIResponse(text, originalName)
   } catch (error) {
-    console.error('Error cleaning product name with AI:', error)
+    console.error('Error calling HF API:', error)
     return null
   }
+}
+
+function parseAIResponse(text: string | undefined, originalName: string): CleanedProductData | null {
+  if (!text) return null
+  
+  try {
+    let jsonStr = text
+    if (text.includes('```json')) {
+      jsonStr = text.replace(/```json\s*/g, '').replace(/```\s*/g, '')
+    } else if (text.includes('```')) {
+      jsonStr = text.replace(/```\s*/g, '')
+    }
+    
+    const parsed = JSON.parse(jsonStr.trim()) as CleanedProductData
+    
+    // Validate and fix
+    if (parsed.cleanedName) {
+      // Ensure brand is a string (handle null/undefined from AI)
+      if (!parsed.brand || typeof parsed.brand !== 'string') {
+        parsed.brand = ''
+      }
+      
+      if (parsed.model && parsed.brand && parsed.model.toLowerCase().startsWith(parsed.brand.toLowerCase())) {
+        parsed.model = parsed.model.substring(parsed.brand.length).trim()
+      }
+      if (!['sneaker', 'apparel', 'accessory', 'other'].includes(parsed.productType)) {
+        parsed.productType = 'other'
+      }
+      if (parsed.condition && !['new', 'used', 'ds'].includes(parsed.condition)) {
+        parsed.condition = undefined
+      }
+      return parsed
+    }
+  } catch (parseError) {
+    console.warn('Failed to parse AI response:', parseError)
+  }
+  return null
 }
 
 /**

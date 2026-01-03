@@ -1,0 +1,7 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+≡ƒöì Debugging Parent Stock & Variants...
+Γ¥î No in-stock parents found! Checking for ANY parents...
+ΓÜá∩╕Å Found parents, but they all have 0 stock. Example: Jordan 4 White Cement ID: e44aaaa2-fc41-4eea-8592-f9c23d1859a4
+   Variants found: 2
+      - Size: 9 | Stock: 1 | CloverID: G3RM95VPTW6E6 | ID: 3579621a-0e4e-410f-8eeb-f2a2aa88f319
+      - Size: 13 (5) | Stock: 1 | CloverID: MXJTXDT82A65A | ID: 18b85f8d-3b05-4a73-a5f1-51419738dd2c

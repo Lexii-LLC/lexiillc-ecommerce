@@ -60,4 +60,27 @@ export interface EnrichedInventoryItem {
   releaseDate?: string
   matched: boolean
   searchQuery: string
+  variants?: ProductVariant[]
+  // Support for raw supabase fields if needed
+  raw_name?: string
+  clover_id?: string
+  clean_name?: string
+  clean_model?: string
+  clean_brand?: string
+  clean_size?: string
+  clean_colorway?: string
+  is_parent?: boolean
+}
+
+export interface ProductVariant {
+  id: string
+  product_id: string
+  clover_item_id: string
+  size?: string
+  color?: string
+  condition?: string
+  variant_number?: string
+  price?: number
+  stock_quantity: number
+  updated_at: string
 }

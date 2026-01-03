@@ -120,22 +120,28 @@ export default function ShopPage() {
     if (!inventory) return []
 
     let filtered = inventory.filter((item) => {
+      const name = item.clean_name || item.name || ''
+      const brand = item.clean_brand || item.brand || ''
+      const model = item.clean_model || item.model || ''
+      const colorway = item.clean_colorway || item.colorway || ''
+      const size = item.clean_size || item.size || ''
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesSearch =
-          item.name.toLowerCase().includes(query) ||
-          item.brand?.toLowerCase().includes(query) ||
-          item.model?.toLowerCase().includes(query) ||
-          item.colorway?.toLowerCase().includes(query)
+          name.toLowerCase().includes(query) ||
+          brand.toLowerCase().includes(query) ||
+          model.toLowerCase().includes(query) ||
+          colorway.toLowerCase().includes(query)
         if (!matchesSearch) return false
       }
 
       // Brand filter
-      if (selectedBrand && item.brand !== selectedBrand) return false
+      if (selectedBrand && brand !== selectedBrand) return false
 
       // Size filter
-      if (selectedSize && item.size !== selectedSize) return false
+      if (selectedSize && size !== selectedSize) return false
 
       // Price filters
       if (item.price !== undefined) {
@@ -148,15 +154,18 @@ export default function ShopPage() {
 
     // Sort items
     filtered.sort((a, b) => {
+      const nameA = a.clean_name || a.name || ''
+      const nameB = b.clean_name || b.name || ''
+
       switch (sortBy) {
         case 'price-low':
           return (a.price || 0) - (b.price || 0)
         case 'price-high':
           return (b.price || 0) - (a.price || 0)
         case 'name-asc':
-          return (a.name || '').localeCompare(b.name || '')
+          return nameA.localeCompare(nameB)
         case 'name-desc':
-          return (b.name || '').localeCompare(a.name || '')
+          return nameB.localeCompare(nameA)
         case 'newest':
         default:
           return 0
@@ -436,6 +445,10 @@ function ProductCard({ item }: { item: EnrichedInventoryItem }) {
     e.stopPropagation()
   }
 
+  const displayName = item.clean_name || item.raw_name || item.name || 'Unknown Product'
+  const displayBrand = item.clean_brand || item.brand
+  const displayModel = item.clean_model || item.model
+
   return (
     <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition-all duration-300 group hover:shadow-2xl hover:shadow-white/10">
       <Link href={`/shop/${item.id}`} className="block">
@@ -445,7 +458,7 @@ function ProductCard({ item }: { item: EnrichedInventoryItem }) {
             <>
               <img
                 src={item.imageUrl}
-                alt={item.name}
+                alt={displayName}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 loading="lazy"
                 decoding="async"
@@ -473,13 +486,13 @@ function ProductCard({ item }: { item: EnrichedInventoryItem }) {
 
         {/* Details */}
         <div className="p-5">
-          {item.brand && (
+          {displayBrand && (
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-1 font-medium">
-              {item.brand}
+              {displayBrand}
             </p>
           )}
           <h3 className="font-bold text-lg mb-2 line-clamp-2 text-white group-hover:text-gray-200 transition-colors">
-            {item.model || item.name}
+            {displayModel || displayName}
           </h3>
           {item.size && (
             <p className="text-gray-500 text-sm mb-3">
