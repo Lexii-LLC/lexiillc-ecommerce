@@ -187,14 +187,24 @@ export default function CartPage() {
                       <span className="px-4 py-2 font-bold min-w-[3rem] text-center">
                         {item.quantity}
                       </span>
-                      <button
-                        onClick={() =>
-                          updateQuantity(item.id, item.quantity + 1)
-                        }
-                        className="p-2 hover:bg-gray-800 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      {(() => {
+                        // Stock can be in stockCount (products) or stock_quantity (variants)
+                        const product = item.product as EnrichedInventoryItem & { stock_quantity?: number } | undefined
+                        const maxStock = product?.stockCount ?? product?.stock_quantity ?? 99
+                        const atMaxStock = item.quantity >= maxStock
+                        return (
+                          <button
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                            disabled={atMaxStock}
+                            title={atMaxStock ? 'Maximum stock reached' : `${maxStock - item.quantity} more available`}
+                            className="p-2 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )
+                      })()}
                     </div>
 
                     <button

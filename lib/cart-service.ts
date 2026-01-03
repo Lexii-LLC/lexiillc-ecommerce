@@ -56,6 +56,36 @@ function getCartItemTable() {
 }
 
 /**
+ * Get available stock for a product or variant
+ * Checks product_variants first (for variant IDs), then falls back to products table
+ */
+export async function getProductStock(productId: string): Promise<number> {
+  // First try to find it as a variant
+  const { data: variant } = await supabase
+    .from('product_variants')
+    .select('stock_quantity')
+    .eq('id', productId)
+    .single()
+
+  if (variant) {
+    return variant.stock_quantity ?? 0
+  }
+
+  // Fall back to products table
+  const { data: product } = await supabase
+    .from('products')
+    .select('stock_count')
+    .eq('id', productId)
+    .single()
+
+  if (product) {
+    return product.stock_count ?? 0
+  }
+
+  return 0
+}
+
+/**
  * Get or create a cart for a user or session
  */
 export async function getOrCreateCart(
@@ -206,6 +236,7 @@ export async function getOrCreateCart(
 
 /**
  * Add item to cart or update quantity if already exists
+ * Validates against available inventory
  */
 export async function addItemToCart(
   cartId: string,
@@ -220,6 +251,9 @@ export async function addItemToCart(
     throw new Error(`Quantity cannot exceed ${MAX_ITEM_QUANTITY} per item`)
   }
 
+  // Check available stock
+  const availableStock = await getProductStock(productId)
+  
   const cart = await getCart(cartId)
   if (!cart) {
     throw new Error('Cart not found')
@@ -238,6 +272,12 @@ export async function addItemToCart(
 
   if (existingItem) {
     const newQuantity = existingItem.quantity + quantity
+    
+    // Check against available stock
+    if (newQuantity > availableStock) {
+      throw new Error(`Only ${availableStock} available in stock. You already have ${existingItem.quantity} in your cart.`)
+    }
+    
     if (newQuantity > MAX_ITEM_QUANTITY) {
       throw new Error(`Total quantity cannot exceed ${MAX_ITEM_QUANTITY} per item`)
     }
@@ -266,6 +306,11 @@ export async function addItemToCart(
 
   if (cart.items.length >= MAX_CART_ITEMS) {
     throw new Error(`Cart cannot have more than ${MAX_CART_ITEMS} items`)
+  }
+
+  // Check against available stock for new items
+  if (quantity > availableStock) {
+    throw new Error(`Only ${availableStock} available in stock.`)
   }
 
   const itemId = crypto.randomUUID()
@@ -297,6 +342,7 @@ export async function addItemToCart(
 
 /**
  * Update cart item quantity
+ * Validates against available inventory
  */
 export async function updateCartItemQuantity(
   cartId: string,
@@ -319,6 +365,14 @@ export async function updateCartItemQuantity(
 
   if (!item) {
     throw new Error('Cart item not found or does not belong to this cart')
+  }
+
+  const itemRow = item as unknown as CartItemRow
+  
+  // Check against available stock
+  const availableStock = await getProductStock(itemRow.productId)
+  if (quantity > availableStock) {
+    throw new Error(`Only ${availableStock} available in stock.`)
   }
 
   const { data: updated, error } = await getCartItemTable()
