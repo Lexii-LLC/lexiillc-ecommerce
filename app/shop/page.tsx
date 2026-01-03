@@ -479,6 +479,11 @@ function ProductCard({ item }: { item: EnrichedInventoryItem }) {
               No Image
             </div>
           )}
+          {item.clover_id?.startsWith('MOCK_') && (
+            <div className="absolute top-3 right-3 bg-purple-500 text-white text-xs px-2 py-1 rounded font-bold">
+              Test Product
+            </div>
+          )}
           {item.stockCount !== undefined && item.stockCount > 0 && (
             <div className="absolute top-3 left-3 bg-green-500 text-white text-xs px-2 py-1 rounded font-bold">
               In Stock
