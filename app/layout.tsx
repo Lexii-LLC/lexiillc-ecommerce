@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Providers } from './providers'
 import Header from '@/components/Header'
+import { AuthRedirect } from '@/components/AuthRedirect'
 import './globals.css'
 
 const logoUrl = 'https://portal.lexiillc.com/assets/logo-dbf3009d.jpg'
@@ -44,6 +45,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
+          <AuthRedirect />
           {/* View Mode Banner */}
           <div className="bg-yellow-500 text-black text-center py-3 px-4 border-b-2 border-yellow-600">
             <p className="text-sm md:text-base font-bold uppercase tracking-wide">
