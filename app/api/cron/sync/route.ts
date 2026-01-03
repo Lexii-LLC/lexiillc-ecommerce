@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('[Cron] Starting scheduled sync job...')
+    console.warn('[Cron] Starting scheduled sync job...')
 
     const { syncResult, normalizeResult } = await runFullSyncJob()
 
