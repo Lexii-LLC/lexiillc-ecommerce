@@ -55,6 +55,12 @@ export default function RootLayout({
           </div>
           <Header />
           {children}
+          {/* Footer */}
+          <footer className="bg-black border-t border-gray-800 py-4 px-4">
+            <p className="text-center text-gray-400 text-sm font-medium uppercase tracking-wider">
+              All Sales Final – No Exchanges – No Returns
+            </p>
+          </footer>
         </Providers>
       </body>
     </html>
