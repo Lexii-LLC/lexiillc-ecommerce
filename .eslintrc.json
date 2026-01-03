@@ -47,7 +47,10 @@
       {
         "allow": ["warn", "error"]
       }
-    ]
+    ],
+    "no-case-declarations": "warn",
+    "prefer-const": "warn",
+    "react-hooks/exhaustive-deps": "warn"
   },
   "ignorePatterns": [
     "dist",

@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Loader2, Mail, Lock } from 'lucide-react'
+import { ArrowLeft, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -33,7 +34,7 @@ export default function LoginPage() {
       // Redirect to home page on success
       router.push('/')
       router.refresh()
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -95,14 +96,21 @@ export default function LoginPage() {
                 <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="w-full pl-12 pr-4 py-4 bg-black border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors"
+                  className="w-full pl-12 pr-12 py-4 bg-black border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
               <div className="text-right">
                 <Link
