@@ -448,16 +448,18 @@ function ProductCard({ item }: { item: EnrichedInventoryItem }) {
   const displayName = item.clean_name || item.raw_name || item.name || 'Unknown Product'
   const displayBrand = item.clean_brand || item.brand
   const displayModel = item.clean_model || item.model
+  // Handle both camelCase (EnrichedInventoryItem) and snake_case (Supabase Product)
+  const imageUrl = item.imageUrl || (item as unknown as { image_url?: string }).image_url
 
   return (
     <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition-all duration-300 group hover:shadow-2xl hover:shadow-white/10">
       <Link href={`/shop/${item.id}`} className="block">
         {/* Image */}
         <div className="aspect-square bg-gray-800 relative overflow-hidden">
-          {item.imageUrl ? (
+          {imageUrl ? (
             <>
               <img
-                src={item.imageUrl}
+                src={imageUrl}
                 alt={displayName}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 loading="lazy"

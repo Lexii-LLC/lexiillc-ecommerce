@@ -20,6 +20,7 @@ export interface Product {
   stock_quantity: number
   is_normalized: boolean
   is_parent: boolean
+  image_url: string | null
   last_synced: string
   created_at: string
   updated_at: string
