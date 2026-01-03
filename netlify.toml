@@ -6,6 +6,8 @@
   NODE_VERSION = "20"
   # Install devDependencies (TypeScript needed for build)
   NPM_FLAGS = "--include=dev"
+  # Skip scanning for public env vars (intentionally bundled for client)
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL,CLOVER_API_BASE_URL"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
