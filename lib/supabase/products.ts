@@ -304,7 +304,8 @@ export async function getUniqueBrands(): Promise<string[]> {
   const { data, error } = await supabase
     .from('products')
     .select('clean_brand')
-    .eq('is_normalized', true)
+    .eq('is_parent', true)
+    .gt('stock_quantity', 0)
     .not('clean_brand', 'is', null)
 
   if (error) {
