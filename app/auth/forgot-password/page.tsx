@@ -1,28 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Loader2, Mail, Lock } from 'lucide-react'
+import { ArrowLeft, Loader2, Mail } from 'lucide-react'
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       })
 
       if (error) {
@@ -30,9 +27,7 @@ export default function LoginPage() {
         return
       }
 
-      // Redirect to home page on success
-      router.push('/')
-      router.refresh()
+      setSuccess(true)
     } catch (err) {
       setError('An unexpected error occurred')
     } finally {
@@ -40,26 +35,49 @@ export default function LoginPage() {
     }
   }
 
+  if (success) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 text-center">
+            <div className="text-6xl mb-4">📧</div>
+            <h1 className="text-2xl font-bold mb-4">Check Your Email</h1>
+            <p className="text-gray-400 mb-6">
+              We&apos;ve sent a password reset link to <strong className="text-white">{email}</strong>.
+              Click the link in the email to reset your password.
+            </p>
+            <Link
+              href="/auth/login"
+              className="text-white underline hover:text-gray-300"
+            >
+              Back to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Back Link */}
         <Link
-          href="/"
+          href="/auth/login"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium mb-8"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Home
+          Back to Login
         </Link>
 
-        {/* Login Form */}
+        {/* Form */}
         <div className="bg-gray-900 rounded-lg border border-gray-800 p-8">
-          <h1 className="text-3xl font-black uppercase mb-2">Sign In</h1>
+          <h1 className="text-3xl font-black uppercase mb-2">Forgot Password</h1>
           <p className="text-gray-400 mb-8">
-            Welcome back! Sign in to access your account.
+            Enter your email and we&apos;ll send you a link to reset your password.
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleResetRequest} className="space-y-6">
             {/* Email */}
             <div>
               <label
@@ -83,37 +101,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-400 mb-2 uppercase tracking-wider"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="w-full pl-12 pr-4 py-4 bg-black border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div className="text-right">
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            </div>
-
             {/* Error Message */}
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
@@ -130,24 +117,13 @@ export default function LoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing In...
+                  Sending...
                 </>
               ) : (
-                'Sign In'
+                'Send Reset Link'
               )}
             </button>
           </form>
-
-          {/* Sign Up Link */}
-          <p className="mt-6 text-center text-gray-400">
-            Don&apos;t have an account?{' '}
-            <Link
-              href="/auth/signup"
-              className="text-white hover:underline font-medium"
-            >
-              Sign up
-            </Link>
-          </p>
         </div>
       </div>
     </div>
