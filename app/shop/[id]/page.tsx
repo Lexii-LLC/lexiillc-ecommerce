@@ -174,9 +174,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const stockCount = selectedVariant?.stock_quantity ?? product.stockCount ?? 0
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden bg-black text-white flex flex-col">
       {/* Back Button */}
-      <div className="border-b border-gray-800 py-6 px-4 md:px-16">
+      <div className="border-b border-gray-800 py-4 px-4 md:px-16 flex-shrink-0">
         <div className="max-w-7xl mx-auto">
           <Link
             href="/shop"
@@ -189,12 +189,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       </div>
 
       {/* Product Content */}
-      <div className="py-12 px-4 md:px-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+      <div className="flex-1 py-6 lg:py-4 px-4 md:px-16 lg:overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 h-full">
             {/* Image Gallery */}
-            <div className="space-y-4">
-              <div className="aspect-square bg-gray-900 rounded-lg overflow-hidden border border-gray-800 group">
+            <div className="flex flex-col lg:h-full">
+              <div className="aspect-square lg:aspect-auto lg:flex-1 bg-gray-900 rounded-lg overflow-hidden border border-gray-800 group">
                 {images.length > 0 ? (
                   <img
                     src={images[0]}
@@ -209,7 +209,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 )}
               </div>
               {images.length > 1 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-2 mt-2 lg:hidden">
                   {images.slice(1, 5).map((image, index) => (
                     <div
                       key={index}
@@ -227,14 +227,14 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             </div>
 
             {/* Product Info */}
-            <div className="flex flex-col justify-center space-y-6 pt-8 lg:pt-0">
+            <div className="flex flex-col justify-center space-y-4 lg:space-y-3 pt-8 lg:pt-0 lg:overflow-y-auto lg:h-full">
               {displayBrand && (
                 <p className="text-gray-400 text-sm uppercase tracking-wider font-medium">
                   {displayBrand}
                 </p>
               )}
 
-              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight leading-tight">
+              <h1 className="text-3xl lg:text-4xl font-black uppercase tracking-tight leading-tight">
                 {outputDisplayModel(displayModel, displayName)}
               </h1>
 
@@ -243,10 +243,10 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               )}
 
               {/* Price */}
-              <div className="pt-4 border-t border-gray-800">
+              <div className="pt-3 lg:pt-2 border-t border-gray-800">
                 {price !== undefined ? (
                   <div className="flex items-baseline gap-4">
-                    <p className="text-5xl font-black text-white">
+                    <p className="text-4xl lg:text-3xl font-black text-white">
                       ${(price / 100).toFixed(2)}
                     </p>
                     {product.retailPrice && product.retailPrice > 0 && (
@@ -262,7 +262,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
               {/* Color Selector */}
               {colors.length > 1 && (
-                <div className="pt-6 space-y-4">
+                <div className="pt-4 lg:pt-2 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold uppercase text-sm tracking-wider">
                       Color
@@ -310,7 +310,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
               {/* Size Selector */}
               {variantsByColor[effectiveColor]?.length > 0 ? (
-                <div className="pt-6 space-y-4">
+                <div className="pt-4 lg:pt-2 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold uppercase text-sm tracking-wider">
                       Size
@@ -319,7 +319,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                       {variantsByColor[effectiveColor].filter(v => v.stock_quantity > 0).length} available
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
                     {variantsByColor[effectiveColor].map((variant) => {
                       const isSelected = effectiveSize === variant.size
                       const isOutOfStock = variant.stock_quantity === 0
@@ -331,7 +331,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                           disabled={isOutOfStock}
                           title={isOutOfStock ? 'Out of Stock' : `${variant.stock_quantity} in stock`}
                           className={`
-                            relative group px-3 py-4 rounded-xl font-bold text-sm transition-all duration-300
+                            relative group px-2 py-3 lg:py-2 rounded-xl font-bold text-sm transition-all duration-300
                             ${isSelected
                               ? 'bg-white text-black shadow-lg shadow-white/20 scale-105' 
                               : isOutOfStock
@@ -369,9 +369,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               )}
 
               {/* Stock Status */}
-              <div className="pt-6">
+              <div className="pt-4 lg:pt-2">
                 <div className={`
-                  inline-flex items-center gap-3 px-5 py-3 rounded-xl font-bold
+                  inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm
                   ${stockCount > 0 
                     ? 'bg-green-500/10 border border-green-500/30 text-green-400' 
                     : 'bg-red-500/10 border border-red-500/30 text-red-400'
@@ -395,7 +395,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-6 space-y-4">
+              <div className="pt-4 lg:pt-2 space-y-2">
                 <AddToCartButton
                   productId={selectedVariant ? selectedVariant.id : product.id}
                   disabled={stockCount === 0}
@@ -404,14 +404,14 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
                 <a
                   href={`mailto:LexiiLLC24@gmail.com?subject=Inquiry about ${encodeURIComponent(displayName)}&body=Hi Lexii,%0D%0A%0D%0AI'm interested in learning more about: ${encodeURIComponent(displayName)}%0D%0A%0D%0A`}
-                  className="block w-full px-8 py-5 border-2 border-white hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all duration-300 text-lg uppercase tracking-wider active:scale-[0.98] text-center"
+                  className="block w-full px-6 py-4 lg:py-3 border-2 border-white hover:bg-white hover:text-black text-white font-bold rounded-lg transition-all duration-300 text-base uppercase tracking-wider active:scale-[0.98] text-center"
                 >
                   Contact Us
                 </a>
               </div>
 
               {/* Additional Info */}
-              <div className="pt-6 border-t border-gray-800">
+              <div className="pt-4 lg:pt-2 border-t border-gray-800">
                 <p className="text-gray-400 text-sm leading-relaxed">
                   Shop online and pick up in-store at our Modesto, CA location
                   at Vintage Faire Mall. All items are authenticated and in
