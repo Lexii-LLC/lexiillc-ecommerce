@@ -1,9 +1,14 @@
 /**
  * AI-powered product name and size cleaning using Groq API
- * Cost-effective implementation with batching and caching
+ * Handles sneakers, apparel, and accessories
  */
 
 import { getCachedHFImprovement, setCachedHFImprovement } from './inventory-cache'
+
+/**
+ * Product type classification
+ */
+export type ProductType = 'sneaker' | 'apparel' | 'accessory' | 'other'
 
 /**
  * Structured output interface for cleaned product data
@@ -12,9 +17,11 @@ export interface CleanedProductData {
   cleanedName: string
   brand: string
   model: string
-  size?: 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'
-  variant?: string
+  productType: ProductType
+  size?: string
   colorway?: string
+  condition?: 'new' | 'used' | 'ds'
+  variantNumber?: string
   confidence: 'high' | 'medium' | 'low'
 }
 
@@ -41,30 +48,35 @@ export async function cleanProductNameWithAI(
   }
 
   try {
-    const prompt = `You are a product data cleaner for a shoe store. Parse the following product name and extract structured data.
+    const prompt = `You are a product data parser for a shoe and streetwear store. Parse this product name and extract structured data.
 
-Product name: "${originalName}"
+Product: "${originalName}"
 
-Extract the following information and respond ONLY with valid JSON (no markdown, no explanation):
+RULES:
+1. Identify product type: sneaker, apparel (tees, hoodies, jackets, pants), accessory (socks, masks, bags, hats), or other
+2. Extract brand name ONCE (don't duplicate, e.g., "Jordan Jordan" is wrong, just "Jordan")
+3. Extract model name (Air Force 1, Dunk, 550, Tee, Hoodie, etc.)
+4. Extract size if present (sneaker sizes like "7y", "8.5w", "12" OR apparel sizes "S", "M", "L", "XL", "2XL")
+5. Extract colorway/color if present (Triple White, Bred, Onyx, Black, etc.)
+6. Extract condition if mentioned: "Used", "DS" (deadstock), or assume "new"
+7. Extract variant number if present in parentheses like "(2)" or "(02)"
+
+BRANDS TO RECOGNIZE:
+Sneakers: Nike, Jordan, Adidas, Yeezy, New Balance, Puma, Reebok, Asics, Vans, Converse
+Streetwear: Supreme, Bape/A Bathing Ape, Stussy, Palace, Off-White, Vlone, Hellstar, ASSC, Essentials, Fear of God
+
+RESPOND WITH ONLY VALID JSON:
 {
-  "cleanedName": "Cleaned display name without size info",
-  "brand": "Brand name (Nike, Adidas, Jordan, New Balance, Puma, Vans, Converse, Reebok, Bape, etc.)",
-  "model": "Model name (e.g., Air Force 1, Dunk Low, Jordan 1)",
-  "size": "Standard size if apparel (S, M, L, XL, XXL, or XXXL) or null for shoes",
-  "variant": "Flavor/variant for non-shoes (e.g., Macaron, Strawberry) or null",
-  "colorway": "Color scheme (e.g., Triple White, Bred, University Blue) or null",
-  "confidence": "high, medium, or low based on parsing confidence"
-}
-
-Common abbreviations:
-- AF1 = Nike Air Force 1
-- AJ = Air Jordan
-- SB = Nike SB
-- NB = New Balance
-- Jordon = Jordan (fix misspelling)
-- YZY = Yeezy
-
-Respond with ONLY the JSON object.`
+  "cleanedName": "Display name without size/condition",
+  "brand": "Single brand name",
+  "model": "Model or product type",
+  "productType": "sneaker" | "apparel" | "accessory" | "other",
+  "size": "Size string or null",
+  "colorway": "Color or null",
+  "condition": "new" | "used" | "ds" | null,
+  "variantNumber": "Variant like (2) or null",
+  "confidence": "high" | "medium" | "low"
+}`
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -102,11 +114,21 @@ Respond with ONLY the JSON object.`
       try {
         const parsed = JSON.parse(jsonStr.trim()) as CleanedProductData
         
-        // Validate required fields
+        // Validate and fix common issues
         if (parsed.cleanedName && parsed.brand !== undefined) {
-          // Normalize size field
-          if (parsed.size && !['S', 'M', 'L', 'XL', 'XXL', 'XXXL'].includes(parsed.size)) {
-            parsed.size = undefined
+          // Fix duplicate brand in model (e.g., "Jordan Jordan 4" -> "Jordan 4")
+          if (parsed.model && parsed.brand && parsed.model.toLowerCase().startsWith(parsed.brand.toLowerCase())) {
+            parsed.model = parsed.model.substring(parsed.brand.length).trim()
+          }
+          
+          // Ensure productType is valid
+          if (!['sneaker', 'apparel', 'accessory', 'other'].includes(parsed.productType)) {
+            parsed.productType = 'other'
+          }
+          
+          // Normalize condition
+          if (parsed.condition && !['new', 'used', 'ds'].includes(parsed.condition)) {
+            parsed.condition = undefined
           }
           
           // Cache the result
@@ -154,7 +176,6 @@ export async function batchCleanProductNames(
 
 /**
  * Clean product name with fallback to original parsing
- * Returns the best available cleaned data
  */
 export async function cleanProductNameSafe(
   originalName: string
@@ -162,10 +183,11 @@ export async function cleanProductNameSafe(
   cleanedName: string
   brand: string
   model: string
-  size?: 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL'
-  variant?: string
+  productType: ProductType
+  size?: string
+  colorway?: string
+  condition?: 'new' | 'used' | 'ds'
 }> {
-  // Try AI cleaning first (if available and cached or API works)
   try {
     const aiResult = await cleanProductNameWithAI(originalName)
     if (aiResult && aiResult.confidence !== 'low') {
@@ -173,20 +195,24 @@ export async function cleanProductNameSafe(
         cleanedName: aiResult.cleanedName,
         brand: aiResult.brand,
         model: aiResult.model,
+        productType: aiResult.productType,
         size: aiResult.size,
-        variant: aiResult.variant,
+        colorway: aiResult.colorway,
+        condition: aiResult.condition,
       }
     }
   } catch {
     // AI cleaning failed, fall through to fallback
   }
 
-  // Fallback: return original name with empty fields
+  // Fallback: return original name with defaults
   return {
     cleanedName: originalName,
     brand: '',
     model: originalName,
+    productType: 'other',
     size: undefined,
-    variant: undefined,
+    colorway: undefined,
+    condition: undefined,
   }
 }

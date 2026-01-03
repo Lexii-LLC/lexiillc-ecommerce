@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Loader2, Mail, Lock, User } from 'lucide-react'
+import { ArrowLeft, Loader2, Mail, Lock } from 'lucide-react'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -13,7 +12,6 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -50,7 +48,7 @@ export default function SignUpPage() {
 
       // Show success message
       setSuccess(true)
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)

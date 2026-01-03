@@ -118,18 +118,20 @@ export async function normalizeUnnormalizedProducts(
             clean_model: aiResult.model,
             clean_size: aiResult.size || undefined,
             clean_colorway: aiResult.colorway || undefined,
+            product_type: aiResult.productType,
             is_normalized: true,
           })
           result.normalized++
-          console.log(`[Normalize] ✓ ${product.raw_name} -> ${aiResult.brand} ${aiResult.model}`)
+          console.warn(`[Normalize] ✓ ${product.raw_name} -> ${aiResult.brand} ${aiResult.model} (${aiResult.productType})`)
         } else {
           // Mark as normalized even if AI couldn't parse (so we don't retry)
           await updateProductByCloverById(product.clover_id, {
             clean_name: product.raw_name,
+            product_type: 'other',
             is_normalized: true,
           })
           result.synced++
-          console.log(`[Normalize] ~ ${product.raw_name} (could not parse)`)
+          console.warn(`[Normalize] ~ ${product.raw_name} (could not parse)`)
         }
 
         // Respect rate limits - wait between requests

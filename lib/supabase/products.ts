@@ -15,6 +15,7 @@ export interface Product {
   clean_model: string | null
   clean_size: string | null
   clean_colorway: string | null
+  product_type: 'sneaker' | 'apparel' | 'accessory' | 'other' | null
   price: number | null
   stock_quantity: number
   is_normalized: boolean
@@ -31,6 +32,7 @@ export interface ProductInsert {
   clean_model?: string
   clean_size?: string
   clean_colorway?: string
+  product_type?: 'sneaker' | 'apparel' | 'accessory' | 'other'
   price?: number
   stock_quantity?: number
   is_normalized?: boolean
@@ -43,6 +45,7 @@ export interface ProductUpdate {
   clean_model?: string
   clean_size?: string
   clean_colorway?: string
+  product_type?: 'sneaker' | 'apparel' | 'accessory' | 'other'
   price?: number
   stock_quantity?: number
   is_normalized?: boolean
