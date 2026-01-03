@@ -435,6 +435,54 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 /**
+ * Get a single variant by UUID, including parent product info
+ */
+export async function getVariantById(variantId: string): Promise<{
+  variant: {
+    id: string
+    product_id: string
+    clover_item_id: string
+    size?: string
+    color?: string
+    condition?: string
+    price?: number
+    stock_quantity: number
+  }
+  parent: Product
+} | null> {
+  const supabase = getPublicClient()
+
+  // First get the variant
+  const { data: variant, error: variantError } = await supabase
+    .from('product_variants')
+    .select('*')
+    .eq('id', variantId)
+    .single()
+
+  if (variantError) {
+    if (variantError.code === 'PGRST116') {
+      return null // Not found
+    }
+    console.error('Error fetching variant by ID:', variantError)
+    return null
+  }
+
+  // Then get the parent product
+  const { data: parent, error: parentError } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', variant.product_id)
+    .single()
+
+  if (parentError || !parent) {
+    console.error('Error fetching parent for variant:', parentError)
+    return null
+  }
+
+  return { variant, parent }
+}
+
+/**
  * Get variants for a parent product
  */
 export async function getProductVariants(parentId: string) {

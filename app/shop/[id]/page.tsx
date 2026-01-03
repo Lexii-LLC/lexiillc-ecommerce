@@ -154,11 +154,14 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     )
   }
 
+  // Handle both camelCase (EnrichedInventoryItem) and snake_case (Supabase Product)
+  const productImageUrl = product.imageUrl || (product as unknown as { image_url?: string }).image_url
+
   const images =
     product.images && product.images.length > 0
       ? product.images
-      : product.imageUrl
-        ? [product.imageUrl]
+      : productImageUrl
+        ? [productImageUrl]
         : []
 
   const displayName = product.clean_name || product.raw_name || product.name || 'Unknown Product'

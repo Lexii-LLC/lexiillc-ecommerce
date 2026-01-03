@@ -125,10 +125,10 @@ export default function CartPage() {
               >
                 {/* Product Image */}
                 <div className="w-32 h-32 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
-                  {item.product?.imageUrl ? (
+                  {(item.product?.imageUrl || item.product?.image_url) ? (
                     <img
-                      src={item.product.imageUrl}
-                      alt={item.product.name}
+                      src={item.product?.imageUrl || item.product?.image_url}
+                      alt={item.product?.clean_name || item.product?.name || 'Product'}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -145,11 +145,19 @@ export default function CartPage() {
                       href={`/shop/${item.productId}`}
                       className="text-xl font-bold hover:text-gray-300 transition-colors"
                     >
-                      {item.product?.name || 'Product'}
+                      {item.product?.clean_name || item.product?.name || 'Product'}
                     </Link>
-                    {item.product?.brand && (
+                    {(item.product?.clean_brand || item.product?.brand) && (
                       <p className="text-gray-400 text-sm mt-1">
-                        {item.product.brand}
+                        {item.product?.clean_brand || item.product?.brand}
+                      </p>
+                    )}
+                    {/* Show size and color for variants */}
+                    {(item.product?.size || item.product?.color) && (
+                      <p className="text-gray-500 text-sm mt-1">
+                        {item.product?.color && <span>{item.product.color}</span>}
+                        {item.product?.color && item.product?.size && <span> / </span>}
+                        {item.product?.size && <span>Size {item.product.size}</span>}
                       </p>
                     )}
                     {item.product?.price && (

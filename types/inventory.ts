@@ -50,10 +50,12 @@ export interface EnrichedInventoryItem {
   brand: string
   model: string
   size?: string // Sneaker sizes (7y, 8.5w, 12) or apparel sizes (S, M, L, XL, 2XL)
+  color?: string // Color for variants
   variant?: string // For non-apparel items (e.g., "Macaron", "Strawberry")
   price?: number
   stockCount?: number
   imageUrl?: string
+  image_url?: string // Snake case from Supabase
   images?: string[]
   colorway?: string
   retailPrice?: number
