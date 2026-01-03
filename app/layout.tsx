@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Providers } from './providers'
 import Header from '@/components/Header'
 import { AuthRedirect } from '@/components/AuthRedirect'
+import CookieConsent from '@/components/CookieConsent'
 import './globals.css'
 
 const logoUrl = 'https://portal.lexiillc.com/assets/logo-dbf3009d.jpg'
@@ -60,6 +61,7 @@ export default function RootLayout({
               All Sales Final – No Exchanges – No Returns
             </p>
           </footer>
+          <CookieConsent />
         </Providers>
       </body>
     </html>
