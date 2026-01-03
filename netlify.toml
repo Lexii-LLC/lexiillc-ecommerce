@@ -1,10 +1,13 @@
 [build]
   command = "npm run build"
-  publish = "dist/client"
-  
-[build.environment]
-  NODE_VERSION = "22"
-  SECRETS_SCAN_OMIT_KEYS = "CLOVER_API_BASE_URL,VITE_HUGGINGFACE_API_KEY,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL"
+  publish = ".next"
 
-[functions]
-  # No additional files needed - using REST API instead of npm packages
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Scheduled function for Clover sync (runs daily at 3 AM UTC)
+[functions."app/api/cron/sync"]
+  schedule = "0 3 * * *"
