@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState, useEffect, useMemo } from 'react'
+import { use, useState, useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
 import type { EnrichedInventoryItem, ProductVariant } from '@/types/inventory'
