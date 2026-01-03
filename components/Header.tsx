@@ -92,7 +92,7 @@ export default function Header() {
       if (indexB !== -1) return 1
       return a.localeCompare(b)
     }) as string[]
-  }, [metadata])
+  }, [metadata, normalizeBrand, validBrands])
 
   const isActive = (path: string) => pathname === path
   const isShopActive = pathname.startsWith('/shop')

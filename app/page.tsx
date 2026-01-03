@@ -260,7 +260,7 @@ function ManufacturersSection() {
       if (indexB !== -1) return 1
       return a.localeCompare(b)
     })
-  }, [metadata])
+  }, [metadata, normalizeBrand, validBrands])
 
   if (isLoading) {
     return (
